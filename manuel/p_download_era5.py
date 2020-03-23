@@ -198,5 +198,5 @@ if PROCESS == True:
 			**{'cdo_commands_mergetime': cdo_commands_mergetime, 'nc_files_allperiods': nc_files_allperiods, 'humidity_equations_file': humidity_equations_file, 'merged_file_allperiods': merged_file_allperiods})
 		result = subprocess.check_output(cdo_command, shell=True)
 		print(result)
-		for files in tempfiles:
+		for tempfile in tempfiles:
 			os.remove(tempfile)
