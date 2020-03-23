@@ -17,11 +17,11 @@ The folder contains the following scripts:
 
 The processed gridded weather data can be downloaded here:
 
-[https://filedn.com/lTfB1HPwylxyFooURQnyi7k/era5_gridded-weather-data.nc]
+[see link in shared Dropbox paper]
 
 The gridded population data can be downloaded here:
 
-[https://filedn.com/lTfB1HPwylxyFooURQnyi7k/gpw_v4_global_agg15min_2020_ERA.nc]
+[see link in shared Dropbox paper]
 
 ## Use of the scripts
 

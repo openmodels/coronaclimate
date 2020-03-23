@@ -8,8 +8,6 @@
 """
 
 __author__ = "Manuel Linsenmeier"
-__copyright__ = "Copyright 2020, Manuel Linsenmeier"
-__license__ = "GPL"
 __email__ = "m.linsenmeier@lse.ac.uk"
 __version__ = "0.0.1"
 __status__ = "Draft"
@@ -36,9 +34,9 @@ PROCESS = True
 variables = ['2m_temperature', 'total_precipitation', '2m_dewpoint_temperature', 'surface_pressure', 'surface_solar_radiation_downwards']
 variables_short = ['t2m', 'tp', 'd2m', 'sp', 'ssrd'] # see https://apps.ecmwf.int/codes/grib/param-db
 
-first_date = datetime.datetime(2020, 1, 1)
+first_date = datetime.datetime(2020, 3, 14)
 t = datetime.datetime.now()
-last_date = datetime.datetime(t.year, t.month, t.day) - datetime.timedelta(days=5)
+last_date = datetime.datetime(t.year, t.month, t.day) - datetime.timedelta(days=6)
 #datetime.datetime(2020, 3, 10)
 
 # === 
