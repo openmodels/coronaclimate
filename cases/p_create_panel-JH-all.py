@@ -12,34 +12,18 @@ __email__ = "m.linsenmeier@lse.ac.uk"
 __version__ = "0.0.1"
 __status__ = "Draft"
 
-import sys
 import os
-import socket
 
 import numpy as np
 import pandas as pd
 import datetime
 
-
-MACHINE = socket.gethostname()
-
-if 'manuel' in MACHINE:
-	DATAPATH = '/home/manuel/ResearchData/covid-19/john-hopkins'
+github_urlpath = "https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series"
 
 # read in JH data
-datapath = os.path.join(DATAPATH, "COVID-19/csse_covid_19_data/csse_covid_19_time_series")
-datafile = "time_series_19-covid-Confirmed.csv"
-df_JH_confirmed = pd.read_csv(os.path.join(datapath, datafile))
-
-# read in JH data
-datapath = os.path.join(DATAPATH, "COVID-19/csse_covid_19_data/csse_covid_19_time_series")
-datafile = "time_series_19-covid-Deaths.csv"
-df_JH_deaths = pd.read_csv(os.path.join(datapath, datafile))
-
-# read in JH data
-datapath = os.path.join(DATAPATH, "COVID-19/csse_covid_19_data/csse_covid_19_time_series")
-datafile = "time_series_19-covid-Recovered.csv"
-df_JH_recovered = pd.read_csv(os.path.join(datapath, datafile))
+df_JH_confirmed = pd.read_csv(os.path.join(github_urlpath, "time_series_covid19_confirmed_global.csv"))
+df_JH_deaths = pd.read_csv(os.path.join(github_urlpath, "time_series_covid19_deaths_global.csv"))
+df_JH_recovered = pd.read_csv(os.path.join(github_urlpath, "time_series_covid19_recovered_global.csv"))
 
 
 df_all = pd.DataFrame(columns=['Country', 'Region', 'Locality', 'Date', 'Confirmed', 'Deaths', 'Recovered', 'Source'])
@@ -69,7 +53,6 @@ for i in np.arange(df_JH_confirmed.shape[0]):
 df_all['Source'] = 'John Hopkins'
 
 # write to file
-datapath = DATAPATH
 datafile = "panel_john-hopkins.csv"
-df_all.to_csv(os.path.join(datapath, datafile), index=False)
+df_all.to_csv(datafile, index=False)
 
