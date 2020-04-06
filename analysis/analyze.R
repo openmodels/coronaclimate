@@ -4,10 +4,19 @@ library(dplyr)
 library(lfe)
 library(ggplot2)
 
-df <- read.csv("cases/john-hopkins/panel_john-hopkins.csv")
-df$regid <- paste(df$Country, df$Region, df$Locality)
+df.jh <- read.csv("cases/john-hopkins/panel_john-hopkins.csv")
+df.jh$regid <- paste(df.jh$Country, df.jh$Region, df.jh$Locality)
+df.jh$fips <- NA
 
-weather <- read.csv("~/data/ecmwf-covid/weather.csv")
+df.usa <- read.csv("cases/usafacts/standardised.csv")
+df.usa$regid <- paste(df.usa$Country, df.usa$Region, df.usa$Locality)
+
+df <- rbind(df.jh, df.usa)
+
+weather.jh <- read.csv("~/data/ecmwf-covid/weather-jh.csv")
+weather.usa <- read.csv("~/data/ecmwf-covid/weather-usa.csv")
+
+weather <- rbind(weather.jh, weather.usa)
 
 ## Construct average over previous week
 smw <- data.frame()
@@ -39,6 +48,9 @@ df2$tp2 <- df2$tp^2
 mod <- felm(dlog ~ tas + tas2 + tp + tp2 | regid + Date | 0 | regid, data=df2)
 mod <- felm(dlog ~ tas + tas2 + tp | regid + Date | 0 | regid, data=df2)
 
+df2$days <- as.numeric(difftime(df2$Date, min(df2$Date), units='days'))
+mod <- felm(dlog ~ tas + tas2 + tp | factor(regid) + factor(regid) : days + factor(Date) | 0 | regid, data=df2)
+
 source("code/analysis/lib.R")
 
 preddf <- data.frame(tmean=seq(-10, 40), tp=0, tp2=0)
@@ -46,3 +58,26 @@ preddf$tas <- preddf$tmean - 20
 preddf$tas2 <- preddf$tmean^2 - 20^2
 
 plot.doseresp(preddf, "Average temperature", "Change in growth rate", indep='tmean')
+
+write.csv(df2, "~/data/ecmwf-covid/combined-jhusa.csv", row.names=F)
+
+## Based on above
+
+setwd("~/Dropbox/Coronavirus and Climate")
+
+library(dplyr)
+library(lfe)
+library(ggplot2)
+
+df2 <- read.csv("~/data/ecmwf-covid/combined-jhusa.csv")
+
+df2$Confirmed <- round(df2$Confirmed)
+df2$Confirmed.delay <- round(df2$Confirmed.delay)
+
+df2$dlog <- log(df2$Confirmed) - log(df2$Confirmed.delay)
+df2$dlog[!is.finite(df2$dlog)] <- NA
+
+mod <- felm(dlog ~ tas + tas2 + tp + tp2 | regid + Date | 0 | regid, data=df2)
+
+df2$days <- as.numeric(df2$days)
+mod <- felm(dlog ~ tas + tas2 + tp | factor(regid) + factor(regid) : days + factor(Date) | 0 | regid, data=df2)
