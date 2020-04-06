@@ -36,7 +36,7 @@ MACHINE = socket.gethostname()
 if 'manuel' in MACHINE:
 	DATAPATH = '/home/manuel/ResearchData/'
 else:
-	DATAPATH = '/users/linsenme/data/'
+	DATAPATH = os.path.join(os.path.expanduser("~"), 'data')
 
 ## == create masks with population weights for each geometry object (shape)
 

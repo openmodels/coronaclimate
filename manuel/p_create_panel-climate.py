@@ -32,7 +32,7 @@ if 'manuel' in MACHINE:
 	DATAPATH = '/home/manuel/ResearchData/'
 	SCRIPTPATH = os.getcwd()
 else:
-	DATAPATH = '/users/linsenme/data/'
+	DATAPATH = os.path.join(os.path.expanduser("~"), 'data')
 	SCRIPTPATH = os.getcwd()
 
 ## load the shapefile as a GeoDataFrame using geopandas
@@ -43,7 +43,7 @@ ID_COLUMN = 'GID_0'
 
 # load the climate data
 datapath = os.path.join(DATAPATH, 'ecmwf-covid')
-ifile = 'era5_2020-01-01_2020-03-13_t2m-tp-d2m-sp-ssrd_daymean.nc'
+ifile = 'era5_2020-01-01_2020-03-17_t2m-tp-d2m-sp-ssrd_daymean.nc'
 
 # do not read in data for the two poles, because population data there not defined and therefore cell not included in weights
 ds_clim = xr.open_dataset(os.path.join(datapath, ifile)).sel(latitude=slice(89.9, -89.9))
