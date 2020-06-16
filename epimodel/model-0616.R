@@ -3,6 +3,7 @@ setwd("~/Dropbox/Coronavirus and Climate")
 outpath <- "results/epimodel-0616.csv"
 weather <- c('absh', 'r', 'tp')
 regfilter <- function(rows) T
+do.multiproc <- T
 
 library(dplyr)
 library(lfe)
@@ -213,22 +214,39 @@ get.paramdf <- function(regid, param, lax) {
                ci50=quantile(lax, .50), ci75=quantile(lax, .75), ci97.5=quantile(lax, .975))
 }
 
-if (!file.exists(outpath)) {
-    results <- data.frame()
-} else {
-    results <- read.csv(outpath)
-    results <- subset(results, !is.na(mu))
+stan.compiled.deaths <- stan_model(model_code=stan.model.deaths)
+stan.compiled.nodice <- stan_model(model_code=stan.model.nodice)
+
+if (!do.multiproc) {
+    if (!file.exists(outpath)) {
+        results <- data.frame()
+    } else {
+        results <- read.csv(outpath)
+        results <- subset(results, !is.na(mu))
+    }
 }
 
-## regid <- "China Hubei "
-
 for (regid in unique(df$regid)) {
-    if (regid %in% results$regid)
-        next
+    if (!do.multiproc) {
+        if (regid %in% results$regid)
+            next
+    }
 
     subdf <- df[df$regid == regid,]
     if (!regfilter(subdf))
         next
+
+    if (do.multiproc) {
+        ## Check if region is claimed
+        regfile <- paste0(outpath, "-", regid)
+        if (file.exists(regfile))
+            next
+        ## Claim this region
+        fileConn <- file(regfile)
+        writeLines(Sys.getpid(), fileConn)
+        close(fileConn)
+    }
+
     print(regid)
 
     subdf$Confirmed[is.na(subdf$Confirmed)] <- 0
@@ -237,6 +255,13 @@ for (regid in unique(df$regid)) {
         subdf$Confirmed[bads] <- c(NA, subdf$Confirmed[-nrow(subdf)])[bads]
     }
 
+    stan.data <- list(T=nrow(subdf), N=round(subdf$population[1]), K=length(weather),
+                      alpha_prior=.395 / 100, eein_prior=1,
+                      invsigma_prior=5.2, invgamma_prior=2.9, invkappa_prior=6.1,
+                      beta0_prior=2.5 * 2.9,
+                      weather=demeanlist(subdf[, weather], list(factor(rep('all', nrow(subdf))))),
+                      ii_init=0, dobserved_true=diff(subdf$Confirmed) + 1)
+
     if (sum(!is.na(rows$Deaths) & is.na(subdf$Confirmed)) > 10) {
         subdf$Deaths[is.na(subdf$Deaths)] <- 0
         while (sum(subdf$Deaths[-1] < subdf$Deaths[-nrow(subdf)]) > 0) {
@@ -244,23 +269,11 @@ for (regid in unique(df$regid)) {
             subdf$Deaths[bads] <- c(NA, subdf$Deaths[-nrow(subdf)])[bads]
         }
 
-        stan.data <- list(T=nrow(subdf), N=round(subdf$population[1]), K=length(weather),
-                          alpha_prior=.395 / 100, eein_prior=1,
-                          invsigma_prior=5.2, invgamma_prior=2.9, invkappa_prior=6.1,
-                          beta0_prior=2.5 * 2.9,
-                          weather=demeanlist(subdf[, weather], list(factor(rep('all', nrow(subdf))))),
-                          ii_init=0, dobserved_true=diff(subdf$Confirmed) + 1, ddeaths_true=diff(subdf$Deaths) + 1)
+        stan.data$ddeaths_true <- diff(subdf$Deaths) + 1
 
-        fit <- stan(model_code=stan.model.deaths, data=stan.data, open_progress=F)
+        fit <- sampling(stan.compiled.deaths, data=stan.data, open_progress=F)
     } else {
-        stan.data <- list(T=nrow(subdf), N=round(subdf$population[1]), K=length(weather),
-                          alpha_prior=.395 / 100, eein_prior=1,
-                          invsigma_prior=5.2, invgamma_prior=2.9, invkappa_prior=6.1,
-                          beta0_prior=2.5 * 2.9,
-                          weather=demeanlist(subdf[, weather], list(factor(rep('all', nrow(subdf))))),
-                          ii_init=0, dobserved_true=diff(subdf$Confirmed) + 1)
-
-        fit <- stan(model_code=stan.model.nodice, data=stan.data, open_progress=F)
+        fit <- sampling(stan.compiled.nodice, data=stan.data, open_progress=F)
     }
 
     la <- extract(fit, permute=T)
@@ -276,6 +289,12 @@ for (regid in unique(df$regid)) {
                     get.paramdf(regid, 'e.r', la$effect[,2]),
                     get.paramdf(regid, 'e.tp', la$effect[,3]),
                     get.paramdf(regid, 'error', la$error))
-    results <- rbind(results, resrow)
-    write.csv(results, outpath, row.names=F)
+
+    if (!do.multiproc) {
+        results <- rbind(results, resrow)
+        write.csv(results, outpath, row.names=F)
+    } else {
+        ## Release claim
+        write.csv(resrow, regfile, row.names=F)
+    }
 }
