@@ -1,6 +1,5 @@
-setwd("~/Dropbox/Coronavirus and Climate")
-
-outpath <- "results/epimodel-0616.csv"
+casespath <- "../../cases/panel-prepped.RData"
+outpath <- "../../results/epimodel-0616.csv"
 weather <- c('absh', 'r', 'tp')
 regfilter <- function(rows) T
 do.multiproc <- T
@@ -205,7 +204,7 @@ model {
 }"
 
 
-load("cases/panel-prepped.RData")
+load(casespath)
 
 get.paramdf <- function(regid, param, lax) {
     if (is.null(lax) || length(lax) == 0)
@@ -243,7 +242,7 @@ for (regid in unique(df$regid)) {
             next
         ## Claim this region
         fileConn <- file(regfile)
-        writeLines(Sys.getpid(), fileConn)
+        writeLines(as.character(Sys.getpid()), fileConn)
         close(fileConn)
     }
 
@@ -262,7 +261,7 @@ for (regid in unique(df$regid)) {
                       weather=demeanlist(subdf[, weather], list(factor(rep('all', nrow(subdf))))),
                       ii_init=0, dobserved_true=diff(subdf$Confirmed) + 1)
 
-    if (sum(!is.na(rows$Deaths) & is.na(subdf$Confirmed)) > 10) {
+    if (sum(!is.na(subdf$Deaths) & !is.na(subdf$Confirmed)) > 10) {
         subdf$Deaths[is.na(subdf$Deaths)] <- 0
         while (sum(subdf$Deaths[-1] < subdf$Deaths[-nrow(subdf)]) > 0) {
             bads <- c(F, subdf$Deaths[-1] < subdf$Deaths[-nrow(subdf)])
