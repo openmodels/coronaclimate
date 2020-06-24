@@ -117,7 +117,10 @@ for (param in unique(results$param)) {
         if (nrow(subdfx) > 1) {
             recorded.country <- estimate.region(subdfx, param, country, "")
             allrecorded <- rbind(allrecorded, recorded.country[-nrow(recorded.country),])
+        } else {
+            allrecorded <- rbind(allrecorded, meta.sublocalities)
         }
+
         write.csv(allrecorded, outfile, row.names=F)
 
         meta.subregions <- rbind(meta.subregions, recorded.country[nrow(recorded.country),])
