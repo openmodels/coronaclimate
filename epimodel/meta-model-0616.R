@@ -1,4 +1,4 @@
-setwd("~/Dropbox/Coronavirus and Climate")
+## setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
 
 library(dplyr)
 library(ggplot2)
@@ -7,8 +7,8 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-results <- read.csv("results/epimodel-0616.csv")
-outfile <- "results/epimodel-meta-0616.csv"
+results <- read.csv("../../results/epimodel-0616.csv")
+outfile <- "../../results/epimodel-meta-0616.csv"
 
 ggplot(results, aes(mu)) +
     facet_wrap(~ param, scales='free') +
@@ -46,7 +46,7 @@ model {
 
 stan.model0.compiled <- stan_model(model_code=stan.model0)
 
-load("cases/panel-prepped.RData")
+load("../../cases/panel-prepped.RData")
 df2 <- df[, c('regid', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible')] %>% group_by(regid) %>% summarize(Country=Country[1], Region=Region[1], Locality=Locality[1], population=mean(population), lowest_level=min(lowest_level), implausible=max(implausible))
 
 estimate.region <- function(subdfx, param, country, region) {
