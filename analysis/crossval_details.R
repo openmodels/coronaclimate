@@ -1,6 +1,6 @@
 setwd("~/Dropbox/Coronavirus and Climate")
 
-load('./cases/panel-prepped.RData')
+load('./cases/panel-prepped_MLI.RData')
 library(dplyr)
 library(tidyr)
 library(lfe)
@@ -12,7 +12,7 @@ df <- df[df$lowest_level == 1, ]
 #summary(mod)$P.r.squared
 
 ## Collect temp. and precip. from last 3 weeks
-weathers <- c('t2m', 'tp', 'absh', 'ssrd', 'de', 'q', 'r')
+weathers <- c('t2m', 'tp', 'absh', 'ssrd', 'de', 'q', 'r', 'utci', 'wbgt')
 for (delay in 1:21)
     for (weather in weathers)
         df[, paste0(weather, '.d', delay)] <- NA
@@ -21,7 +21,7 @@ for (regid in unique(df$regid)) {
     print(regid)
     rows <- which(df$regid == regid)
     subdf <- df[rows,]
-    if (nrow(subdf) > 130) {
+    if (nrow(subdf) > 160) {
         print(paste("Duplicated region:", regid))
         next
     }
@@ -61,7 +61,8 @@ df_new <- df_new %>%
     group_by(regid) %>%
     mutate(month = months(strptime(Date, format='%Y-%m-%d'))) %>%
     mutate(growth3 = ifelse(month == 'March', 'march', 
-                    ifelse(month == 'April', 'april', NA))) %>%
+                    ifelse(month == 'April', 'april',
+                    ifelse(month == 'May', 'may', NA)))) %>%
     ungroup()
 
 df <- base::data.frame(select(df_new, -c('dlog_ma', 'daysince1', 'month')))
@@ -95,7 +96,9 @@ for (growth in c('any', unique(na.omit(df$growth)), unique(na.omit(df$growth2)),
 
     alldata <- c(traindata, testdata)
     #print(length(alldata))
-    df$mytas <- df$mytas2 <- df$myprcp <- df$myprcp2 <- df$myabsh <- df$myabsh2 <- df$myssrd <- df$myssrd2 <- df$myde <- df$myde2 <- df$myq <- df$myq2 <- df$myr <- df$myr2 <- NA
+    df$mytas <- df$mytas2 <- df$myprcp <- df$myprcp2 <- df$myabsh <- df$myabsh2 <- 
+        df$myssrd <- df$myssrd2 <- df$myde <- df$myde2 <- df$myq <- df$myq2 <- df$myr <- 
+        df$myr2 <- df$mywbgt <- df$mywbgt2 <- df$myutci <- df$myutci2 <-NA
 
     for (last in 1:21) {
         for (first in last:21) {
@@ -107,6 +110,8 @@ for (growth in c('any', unique(na.omit(df$growth)), unique(na.omit(df$growth2)),
             desum <- 0
             qsum <- 0
             rsum <- 0
+            wbgtsum <- 0
+            utcisum <- 0
             for (delay in last:first) {
                 t2msum <- t2msum + df[, paste0('t2m.d', delay)]
                 tpsum <- tpsum + df[, paste0('tp.d', delay)]
@@ -115,6 +120,8 @@ for (growth in c('any', unique(na.omit(df$growth)), unique(na.omit(df$growth2)),
                 desum <- desum + df[, paste0('de.d', delay)]
                 qsum <- qsum + df[, paste0('q.d', delay)]
                 rsum <- rsum + df[, paste0('r.d', delay)]
+                wbgtsum <- wbgtsum + df[, paste0('wbgt.d', delay)]
+                utcisum <- utcisum + df[, paste0('utci.d', delay)]
             }
             df$mytas <- t2msum / (first - last + 1) - 273.15
             df$mytas2 <- df$mytas^2
@@ -130,13 +137,16 @@ for (growth in c('any', unique(na.omit(df$growth)), unique(na.omit(df$growth2)),
             df$myq2 <- df$myq^2
             df$myr <- rsum / (first - last + 1)
             df$myr2 <- df$myr^2
-
+            df$mywbgt <- wbgtsum / (first - last + 1)
+            df$mywbgt2 <- df$mywbgt^2
+            df$myutci <- utcisum / (first - last + 1)
+            df$myutci2 <- df$myutci^2
             ## mod <- felm(dlog ~ mytas + mytas2 + mytas3 + myprcp | factor(regid) + factor(regid) : factor(week) + factor(superset) : factor(Date) | 0 | regid, data=df[traindata,])
             ## fes <- getfe(mod)
 
             fl <- list(factor(df$regid[alldata]), factor(paste(df$regid[alldata], df$week[alldata])), factor(paste(df$superset[alldata], df$Date[alldata])))
-            dmdf <- demeanlist(df[alldata, c('dlog', 'mytas', 'mytas2', 'myprcp', 'myprcp2', 'myabsh', 'myabsh2', 'myssrd', 'myssrd2')], fl)
-            mymod <- lm(dlog ~ mytas + mytas2 + myprcp + myprcp2 + myabsh + myabsh2 + myssrd + myssrd2 , dmdf[1:length(traindata),])
+            dmdf <- demeanlist(df[alldata, c('dlog', 'mytas', 'mytas2', 'myprcp', 'myprcp2', 'myabsh', 'myabsh2', 'myssrd', 'myssrd2', 'myde', 'myde2', 'myq', 'myq2', 'myr', 'myr2', 'mywbgt', 'mywbgt2', 'myutci', 'myutci2')], fl)
+            mymod <- lm(dlog ~ mytas + mytas2 + myprcp + myprcp2 + myabsh + myabsh2 + myssrd + myssrd2 + myde + myde2 + myq + myq2 + myr + myr2 + mywbgt + mywbgt2 + myutci + myutci2, dmdf[1:length(traindata),])
 
             preds <- predict(mymod, dmdf[(1+length(traindata)):nrow(dmdf),])
 
@@ -154,8 +164,8 @@ for (growth in c('any', unique(na.omit(df$growth)), unique(na.omit(df$growth2)),
                 #print(length(alldata_country))
 
                 fl_country <- list(factor(df$regid[alldata_country]), factor(paste(df$regid[alldata_country], df$week[alldata_country])), factor(paste(df$superset[alldata_country], df$Date[alldata_country])))
-                dmdf <- demeanlist(df[alldata_country, c('dlog', 'mytas', 'mytas2', 'myprcp', 'myprcp2', 'myabsh', 'myabsh2', 'myssrd', 'myssrd2', 'myde', 'myde2', 'myq', 'myq2', 'myr', 'myr2')], fl_country)
-                mymod <- lm(dlog ~ mytas + mytas2 + myprcp + myprcp2 + myabsh + myabsh2 + myssrd + myssrd2 + myde + myde2 + myq + myq2 + myr + myr2, dmdf[1:length(traindata_country),])
+                dmdf <- demeanlist(df[alldata_country, c('dlog', 'mytas', 'mytas2', 'myprcp', 'myprcp2', 'myabsh', 'myabsh2', 'myssrd', 'myssrd2', 'myde', 'myde2', 'myq', 'myq2', 'myr', 'myr2', 'mywbgt', 'mywbgt2', 'myutci', 'myutci2')], fl_country)
+                mymod <- lm(dlog ~ mytas + mytas2 + myprcp + myprcp2 + myabsh + myabsh2 + myssrd + myssrd2 + myde + myde2 + myq + myq2 + myr + myr2 + mywbgt + mywbgt2 + myutci + myutci2, dmdf[1:length(traindata_country),])
 
                 preds <- predict(mymod, dmdf[(1+length(traindata_country)):nrow(dmdf), ])
 
@@ -167,7 +177,7 @@ for (growth in c('any', unique(na.omit(df$growth)), unique(na.omit(df$growth2)),
         }
     }
 }
-write.csv(results, 'crossval_results_new.csv')
+write.csv(results, 'crossval_results_update.csv')
 
 
 #library(ggplot2)

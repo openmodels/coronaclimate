@@ -7,7 +7,7 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-results <- read.csv("results/epimodel-0604-ww.csv")
+results <- read.csv("results/epimodel-0616.csv")
 
 ggplot(results, aes(mu)) +
     facet_wrap(~ param, scales='free') +
@@ -15,14 +15,18 @@ ggplot(results, aes(mu)) +
 
 ## Geospatial meta-analysis
 
+bounds <- list("omega"=c(0, 1))
+
 stan.model0 <- "
 data {
   int<lower=0> I; // number of studies
   real beta[I]; // estimated treatment effects
   real<lower=0> sigma[I]; // s.e. of effect estimates
+  real lobound;
+  real hibound;
 }
 parameters {
-  real mu;
+  real<lower=lobound, upper=hibound> mu;
   real<lower=0> tau;
   real eta[I];
 }
@@ -46,9 +50,11 @@ data {
   real sin_lon[I]; // sin(longitude)
   real div_lat[I]; // latitude / 90
   real<lower=0> geo_prior;
+  real lobound;
+  real hibound;
 }
 parameters {
-  real mu;
+  real<lower=lobound, upper=hibound> mu;
   real gamma_cosl;
   real gamma_sinl;
   real gamma_xlat;
@@ -86,10 +92,11 @@ for (param in unique(results$param)) {
 
     stan.data <- list(I=nrow(subdf2), beta=subdf2$mu, sigma=subdf2$sd,
                       div_lat=subdf2$Y / 90, cos_lon=cos(subdf2$X * pi / 180),
-                      sin_lon=sin(subdf2$Y * pi / 180), geo_prior=0)
+                      sin_lon=sin(subdf2$Y * pi / 180), geo_prior=0,
+                      lobound=bounds[[param]][1], hibound=bounds[[param]][2])
 
     fit0 <- stan(model_code=stan.model0, data=stan.data,
-                 iter=1000, chains=4)
+                 iter=1000, chains=4, control=list(adapt_delta=0.99, max_treedepth=20))
     la0 <- extract(fit0, permute=T)
 
     stan.data$geo_prior <- sd(la0$mu) # could argue should be sd(la0$theta), but too much freedom

@@ -13,11 +13,11 @@ df2 <- df %>% group_by(regid) %>% summarize(index=sum(t2m * tp))
 df2$regid[duplicated(df2$index)]
 
 ## Construct average over previous period
-weather.delayA <- c(2, 8)
-weather.delayB <- c(9, 20)
+weather.delayA <- c(4, 8)
+weather.delayB <- c(11, 19)
 
 df$Confirmed.delay <- NA
-weathers <- c('absh', 'absh2', 'de', 'de2', 'q', 'q2', 'r', 'r2', 'ssrd', 'ssrd2', 't2m', 't2m2', 'tp', 'tp2')
+weathers <- c('absh', 'absh2', 'de', 'de2', 'q', 'q2', 'r', 'r2', 'ssrd', 'ssrd2', 't2m', 't2m2', 'tp', 'tp2', 'wbgt', 'wbgt2', 'utci', 'utci2')
 for (weather in weathers)
     df[, paste0(weather, '.predA')] <- NA
     df[, paste0(weather, '.predB')] <- NA

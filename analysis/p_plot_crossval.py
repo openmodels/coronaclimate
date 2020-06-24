@@ -21,8 +21,8 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-datapath = '~/Dropbox/Coronavirus and Climate'
-datafile = 'crossval_results_new.csv'
+datapath = '~/Dropbox/Coronavirus and Climate/results'
+datafile = 'crossval_results_update.csv'
 df = pd.read_csv(os.path.join(datapath, datafile))
 
 #df = pd.concat([df, df2])
@@ -49,7 +49,7 @@ for country in df['country'].unique():
 			x, y = df_red.sort_values(by='rsqr', ascending=False).loc[:, ['first', 'last']].values[i]
 			#print(country, i, x, y)
 			ax.annotate(s=str(i+1), xy=(x-1, y-1), xycoords='data', ha='center', va='center')
-		fig.savefig('../../figures/crossval_{0:s}_{1:s}_new.png'.format(country, growth).replace(' ', '-'), bbox_inches='tight')
+		fig.savefig('../../figures/crossval_{0:s}_{1:s}_update.png'.format(country, growth).replace(' ', '-'), bbox_inches='tight')
 """
 
 datapath = '~/Dropbox/Coronavirus and Climate'

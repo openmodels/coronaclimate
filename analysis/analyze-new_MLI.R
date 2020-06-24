@@ -1,19 +1,37 @@
+library(dplyr)
+library(lfe)
+library(ggplot2)
+library(stargazer)
 setwd("~/Dropbox/Coronavirus and Climate")
 
-##source("code/analysis/prepare.R")
+SWITCH = F
+
+#source("code/analysis/prepare.R")
 #load("cases/panel-prepped.RData")
 load("cases/panel-prepped_MLI.RData")
 
+# select only lowest level
 df <- df[df$lowest_level == 1, ]
-df <- df %>%
-    mutate(month = months(strptime(Date, format='%Y-%m-%d')))
 
-df <- df[df$month == 'March', ]
+# select only observations for month X
+df$month <- months(strptime(df$Date, format='%Y-%m-%d'))
+#df <- df[df$month == 'March', ]
+
+# remove observations with the same weather
+#df2 <- df %>% group_by(regid) %>% summarize(index=sum(t2m * tp)) %>% ungroup
+#duplicates <- df2[duplicated(df2$index), 'regid']
+#df <- df[!(df$regid %in% duplicates$regid), ]
 
 ## Models to report:
 ## instantaneous, no policy
-mod.in <- felm(dlog ~ absh + absh2 + de + de2 + q + q2 + r + r2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 | factor(regid) + factor(regid) : factor(week) + factor(superset) : factor(Date) | 0 | regid, data=df)
+mod.in <- felm(dlog ~ absh + de + t2m + tp + utci + utci2 + ssrd | factor(regid) + factor(regid) : factor(week) + factor(superset) : factor(Date) | 0 | regid, data=df)
+
+#mod.in <- felm(dlog ~ absh + absh2 + de + de2 + q + q2 + r + r2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 | factor(regid) + factor(regid) : factor(week) + factor(superset) : factor(Date) | 0 | regid, data=df)
+#mod.in <- felm(dlog ~ absh + de + q + r + ssrd + t2m + tp | factor(regid) + factor(regid) : factor(week) + factor(superset) : factor(Date) | 0 | regid, data=df)
 summary(mod.in)
+
+# identify problematic variable
+#pairs(~absh + de + q + r + ssrd + t2m + tp, data=df)
 
 ## xval-delay, no policy
 df.pred <- df
@@ -21,22 +39,27 @@ df.pred <- df
 #for (weather in weathers)
 #    df.pred[, weather] <- df[, paste0(weather, ".pred")]
 
-weathers <- c('absh', 'de', 'q', 'r', 'ssrd', 't2m', 'tp')
+if (SWITCH == T) {
+weathers <- c('absh', 'r', 'ssrd', 't2m', 'tp', 'utci')
 weathers_linearA <- c()
 weathers_linearB <- c()
+weathers_orders12A <- c()
+weathers_orders12B <- c()
 for (weather in weathers) {
 	weathers_linearA <- c(weathers_linearA, paste0(weather, '.predA'))
 	weathers_linearB <- c(weathers_linearB, paste0(weather, '.predB'))
+	weathers_orders12A <- c(weathers_orders12A, paste0(weather, '.predA'), paste0(weather, '2.predA'))
+	weathers_orders12B <- c(weathers_orders12B, paste0(weather, '.predB'), paste0(weather, '2.predB'))
 }
 
 formula <- 'dlog ~'
 formulaA <- 'dlog ~'
 formulaB <- 'dlog ~'
-for (variable in weathers_linearA) {
+for (variable in weathers_orders12A) {
 	formula <- paste0(formula, ' + ', variable)
 	formulaA <- paste0(formulaA, ' + ', variable)
 }
-for (variable in weathers_linearB) {
+for (variable in weathers_orders12B) {
 	formula <- paste0(formula, ' + ', variable)
 	formulaB <- paste0(formulaB, ' + ', variable)
 }
@@ -58,73 +81,37 @@ summary(mod.xnA)
 mod.xnB <- felm(formulaB, data=df.pred)
 summary(mod.xnB)
 
-
-## instantaneous, with policy
-poldf <- read.csv("policy/policyml.csv")
-df$fex <- poldf$fex
-mod.ip <- felm(dlog ~ absh + absh2 + de + de2 + q + q2 + r + r2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 | factor(regid) + factor(fex) + factor(superset) : factor(Date) | 0 | regid, data=subset(df, fex != ''))
-summary(mod.ip)
-
-## xval-delay, with policy
-df.pred$fex <- df$fex
-mod.xp <- felm(dlog ~ absh + absh2 + de + de2 + q + q2 + r + r2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 | factor(regid) + factor(fex) + factor(superset) : factor(Date) | 0 | regid, data=subset(df.pred, fex != ''))
-summary(mod.xp)
-
 library(stargazer)
-stargazer(list(mod.in, mod.xn, mod.ip, mod.xp), omit.stat='ser', no.space=T, column.labels=c("Inst.", "X-Val", "Inst. P.", "X-Val P."), add.lines=list(c("F-statistic(full model)", 2.56, 2.547, 42.9, 39.17), c("F-statistic(proj model)", 0.9522, 1.611, 2.436, 2.145)))
+stargazer(list(mod.xn, mod.xnA, mod.xnB), omit.stat='ser', no.space=T, column.labels=c("Both lags", "Lag 2-8", "Lag 10-20"))
+}
 
-## Look for best performing predictors
+## new on 2020-06-23
 
-setwd("~/Dropbox/Coronavirus and Climate")
+# select weather variables
+weather_subset <- c('absh.predA', 'r.predA', 'ssrd.predA', 'tp.predA', 't2m.predA', 'utci.predA', 'utci2.predA',
+					'absh.predB', 'r.predB', 'ssrd.predB', 'tp.predB', 't2m.predB', 'utci.predB', 'utci2.predB')
 
-library(lfe)
+df[, c(weather_subset)] <- scale(df[, c(weather_subset)])
 
-##source("code/analysis/prepare.R")
-load("cases/panel-prepped.RData")
-
+# read in policy fixed effects
 poldf <- read.csv("policy/policyml.csv")
-df$fex <- poldf$fex
+df <- merge(df, poldf, by.x=c('Country', 'Region', 'Locality', 'Date'), by.y=c('Country', 'Region', 'Locality', 'Date'))
 
-dmdf1 <- df[, c('dlog', 'absh.pred', 'de.pred', 'q.pred',  'r.pred', 'ssrd.pred', 't2m.pred', 'tp.pred')]
-rows <- df$fex != '' & rowSums(is.na(dmdf1)) == 0
-dmdf2 <- demeanlist(dmdf1[rows,], list(factor(df$regid[rows]), factor(df$fex[rows]), factor(paste(df$superset[rows], df$Date[rows]))))
+# select observations
+rows <- df$fex != '' & rowSums(is.na(df[, c('dlog', weather_subset)])) == 0
 
-mod.lfe <- felm(dlog ~ absh.pred + de.pred + q.pred + r.pred + ssrd.pred + tp.pred + t2m.pred | factor(regid) + factor(fex) + factor(superset) : factor(Date) | 0 | regid, data=df[rows,])
-summary(mod.lfe)
+# project out fixed effects
+dmdf <- demeanlist(df[rows, c('dlog', weather_subset)], list(factor(df$regid[rows]), factor(paste(df$regid[rows], df$week[rows])), factor(paste(df$superset[rows], df$Date[rows]))))
 
-mod.all <- lm(dlog ~ 0 + absh.pred + de.pred + q.pred + r.pred + ssrd.pred + tp.pred + t2m.pred, data=dmdf2)
+# estimate without policy FE
+mod.AB <- lm(dlog ~ 0 + absh.predA + r.predA + ssrd.predA + tp.predA + t2m.predA + utci.predA + utci2.predA +
+	absh.predB + r.predB + ssrd.predB + tp.predB + t2m.predB + utci.predB + utci2.predB, data=dmdf)
+summary(mod.AB)
 
-library(MASS)
-stepAIC(mod2, direction='both')
+# estimate with policy FE
+mod.ABpolicy <- felm(dlog ~ absh.predA + r.predA + ssrd.predA + tp.predA + t2m.predA + utci.predA + utci2.predA +
+	absh.predB + r.predB + ssrd.predB + tp.predB + t2m.predB + utci.predB + utci2.predB | factor(regid) + factor(fex) + factor(superset) : factor(Date) | 0 | regid, data=df[rows, ])
+summary(mod.ABpolicy)
 
-mod.aic <- lm(dlog ~ 0 + absh.pred + q.pred + r.pred + ssrd.pred + tp.pred, data=dmdf2)
-
-library(glmnet)
-
-cv.out <- cv.glmnet(as.matrix(dmdf2[, -1]), dmdf2[, 1], alpha=1, nfolds=3)
-plot(cv.out$nzero, cv.out$cvm)
-plot(cv.out)
-
-bestlam <- cv.out$lambda.min
-
-lasso.mod <- glmnet(as.matrix(dmdf2[, -1]), dmdf2[, 1], alpha=1)
-
-lasso.pred <- predict(lasso.mod, s=bestlam, newx=as.matrix(dmdf2[, -1]))
-mean((lasso.pred-dmdf2[, 1])^2)
-
-predict(lasso.mod, type='coefficients', s=bestlam)
-
-mod.lso <- lm(dlog ~ 0 + absh.pred + de.pred + r.pred + ssrd.pred + t2m.pred + tp.pred, data=dmdf2)
-
-library(stargazer)
-stargazer(list(mod.all, mod.aic, mod.lso), omit.stat='ser', no.space=T, column.labels=c("All", "AIC", "LASSO"))
-
-anv.all <- data.frame(coeff=row.names(anova(mod.all)), varexp=1e6 * anova(mod.all)[,2] / sum(anova(mod.all)[,2]))
-anv.aic <- data.frame(coeff=row.names(anova(mod.aic)), varexp=1e6 * anova(mod.aic)[,2] / sum(anova(mod.aic)[,2]))
-anv.lso <- data.frame(coeff=row.names(anova(mod.lso)), varexp=1e6 * anova(mod.lso)[,2] / sum(anova(mod.lso)[,2]))
-
-library(dplyr)
-anv <- anv.all %>% left_join(anv.aic, by='coeff', suffix=c('.all', '.aic')) %>%
-    left_join(anv.lso, by='coeff', suffix=c('', '.lso'))
-library(xtable)
-print(xtable(anv[-nrow(anv),]), include.rownames=F)
+tablat <- stargazer(list(mod.AB, mod.ABpolicy), omit.stat='ser', no.space=T, column.labels=c("standard FE", "policy FE"))
+writeLines(tablat, "results/results1.tex")
