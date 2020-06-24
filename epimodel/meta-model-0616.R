@@ -2,7 +2,6 @@
 
 library(dplyr)
 library(ggplot2)
-library(PBSmapping)
 library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
@@ -10,6 +9,9 @@ rstan_options(auto_write = TRUE)
 results <- read.csv("../../results/epimodel-0616.csv")
 outfile <- "../../results/epimodel-meta-0616.csv"
 
+results$param <- factor(results$param, c('alpha', 'invgamma', 'invkappa', 'invsigma',
+                                         'omega', 'deathrate', 'deathomegaplus', 'error',
+                                         'e.absh', 'e.r', 'e.tp'))
 ggplot(results, aes(mu)) +
     facet_wrap(~ param, scales='free') +
     geom_histogram() + xlab(NULL) + ylab(NULL) + theme_bw()
@@ -110,10 +112,12 @@ for (param in unique(results$param)) {
             meta.sublocalities <- rbind(meta.sublocalities, recorded.region[nrow(recorded.region),])
         }
 
-        recorded.country <- estimate.region(rbind(subset(subdf3, !(Region %in% has.sublocalities)),
-                                                  meta.sublocalities[, -ncol(meta.sublocalities)]), # drop group
-                                            param, country, "")
-        allrecorded <- rbind(allrecorded, recorded.country[-nrow(recorded.country),])
+        subdfx <- rbind(subset(subdf3, !(Region %in% has.sublocalities)),
+                        meta.sublocalities[, -ncol(meta.sublocalities)]) # drop group
+        if (nrow(subdfx) > 1) {
+            recorded.country <- estimate.region(subdfx, param, country, "")
+            allrecorded <- rbind(allrecorded, recorded.country[-nrow(recorded.country),])
+        }
         write.csv(allrecorded, outfile, row.names=F)
 
         meta.subregions <- rbind(meta.subregions, recorded.country[nrow(recorded.country),])
