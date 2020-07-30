@@ -18,7 +18,7 @@ ggplot(results, aes(mu)) +
 
 ## Geospatial meta-analysis
 
-bounds <- list("alpha"=c(0, 10), "deathrateplus"=c(0, 1), "deathrate"=c(0, 1),
+bounds <- list("alpha"=c(0, 10), "deathomegaplus"=c(0, 1), "deathrate"=c(0, 1),
                "e.absh"=c(-20, 20), "e.r"=c(-20, 20), "e.tp"=c(-20, 20),
                "invgamma"=c(0, 100), "invkappa"=c(0, 100), "invsigma"=c(0, 100), "omega"=c(0, 1))
 
@@ -87,6 +87,7 @@ estimate.region <- function(subdfx, param, country, region) {
     recorded
 }
 
+## allrecorded <- read.csv(outfile)
 allrecorded <- data.frame()
 for (param in unique(results$param)) {
     if (!(param %in% names(bounds)))
