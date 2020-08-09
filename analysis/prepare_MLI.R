@@ -29,7 +29,7 @@ for (regid in unique(df$regid)) {
         print(paste("Duplicated region:", regid))
         next
     }
-    if (!(subdf$days[1] == 0 && all(round(diff(subdf$days)) == 1))) {
+    if (!(all(round(diff(subdf$days)) == 1))) {
         print(paste("Bad days in region:", regid))
         next
     }
