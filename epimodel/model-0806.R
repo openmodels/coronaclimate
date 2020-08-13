@@ -8,7 +8,7 @@ weather <- c('r', 't2m', 'tp')
 e.priors.mu <- c(-0.003392, -0.003175, -0.000828)
 e.priors.se <- 5 * c(0.000737, 0.001719, 0.000606)
 regfilter <- function(rows) T
-do.multiproc <- F
+do.multiproc <- T
 
 load(casespath)
 
