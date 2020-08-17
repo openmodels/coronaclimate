@@ -5,7 +5,7 @@ library(ggplot2)
 library(scales)
 library(PBSmapping)
 
-outfile <- "../../results/epimodel-meta-0616.csv"
+outfile <- "../../results/epimodel-meta-0806-x5.csv"
 allrecorded <- read.csv(outfile)
 
 ## Show all results
@@ -22,18 +22,26 @@ allrecorded$paramgroup <- "Drop"
 allrecorded$paramgroup[allrecorded$param %in% c('invsigma', 'invkappa', 'invgamma')] <- "Period Lengths"
 allrecorded$paramgroup[allrecorded$param %in% c('e.tp', 'e.r', 'e.absh')] <- "Weather Response"
 allrecorded$paramgroup[allrecorded$param %in% c('omega', 'deathrate', 'deathomegaplus')] <- "Proportional Response"
+allrecorded$paramgroup[allrecorded$param %in% c('mobility_slope', 'portion_early', 'alpha')] <- "Behavioural Response"
+
+for (paramgroup in unique(allrecorded$paramgroup)) {
+    botlev <- quantile(allrecorded$mu[allrecorded$paramgroup == paramgroup], .01)
+    toplev <- quantile(allrecorded$mu[allrecorded$paramgroup == paramgroup], .99)
+    allrecorded$paramgroup[allrecorded$paramgroup == paramgroup & allrecorded$mu < botlev] <- "Drop"
+    allrecorded$paramgroup[allrecorded$paramgroup == paramgroup & allrecorded$mu > toplev] <- "Drop"
+}
 
 ggplot(subset(allrecorded, Country == "" & paramgroup != "Drop"), aes(param, mu)) +
     facet_wrap(~ paramgroup, ncol=1, scales="free") +
     coord_flip() +
-    geom_violin(data=subset(allrecorded, Country != "" & Region == "" & paramgroup != "Drop"), fill=muted('blue'), alpha=.5, linetype='blank') +
+    geom_violin(data=subset(allrecorded, Country != "" & Region == "" & paramgroup != "Drop"), fill=muted('blue'), alpha=.5, linetype='blank', scale="width") +
     geom_point() + geom_errorbar(aes(ymin=ci2.5, ymax=ci97.5)) +
     theme_bw() + ylab("Hyper-paramater value and 95% CI") + xlab(NULL)
 
 ## Prepare to map
 
 ## Grab ALPHA.3 from df
-load("../../cases/panel-prepped.RData")
+load("../../cases/panel-prepped_MLI.RData")
 df2 <- df[, c('Country', 'ALPHA.3')] %>% group_by(Country) %>% summarize(ALPHA.3=ALPHA.3[1])
 allrecorded2 <- subset(allrecorded, Region == "" & Locality == "" & group == "Combined") %>% left_join(df2)
 

@@ -35,22 +35,17 @@ data {
 parameters {
   real<lower=lobound, upper=hibound> mu;
   real<lower=0> tau;
-  real eta[I];
-}
-transformed parameters {
-  real theta[I];
-  for (ii in 1:I)
-    theta[ii] = mu + tau * eta[ii];
+  real<lower=lobound, upper=hibound> theta[I];
 }
 model {
-  target += normal_lpdf(eta | 0, 1);
-  target += normal_lpdf(beta | theta, sigma);
+  beta ~ normal(theta, sigma);
+  theta ~ normal(mu, tau);
 }
 "
 
 stan.model0.compiled <- stan_model(model_code=stan.model0)
 
-load("../../cases/panel-prepped.RData")
+load("../../cases/panel-prepped_MLI.RData")
 df2 <- df[, c('regid', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible')] %>% group_by(regid) %>% summarize(Country=Country[1], Region=Region[1], Locality=Locality[1], population=mean(population), lowest_level=min(lowest_level), implausible=max(implausible))
 
 estimate.region <- function(subdfx, param, country, region) {
