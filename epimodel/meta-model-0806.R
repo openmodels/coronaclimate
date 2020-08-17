@@ -56,6 +56,12 @@ estimate.region <- function(subdfx, param, country, region) {
     fit0 <- sampling(stan.model0.compiled, data=stan.data,
                      iter=1000, chains=4, open_progress=F)
     la0 <- extract(fit0, permute=T)
+    if (is.null(la0)) {
+        recorded.base <- subdfx[, c('regid', 'param', 'mu', 'sd', 'ci2.5', 'ci25', 'ci50', 'ci75', 'ci97.5', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible', 'rhat')]
+        recorded.base$group <- "Raw"
+	recorded.glob <- data.frame(regid=paste(country, region, ""), param, mu=NA, sd=NA, ci2.5=NA, ci25=NA, ci50=NA, ci75=NA, ci97.5=NA, Country=country, Region=region, Locality="", population=sum(subdfx$population), lowest_level=0, implausible=max(subdfx$implausible), rhat=NA, group="Combined")
+        return(rbind(recorded.base, recorded.glob))
+    }
 
     thetas <- la0$theta
     thetas[thetas < bounds[[param]][1] & thetas > bounds[[param]][2]] <- NA
@@ -73,12 +79,13 @@ estimate.region <- function(subdfx, param, country, region) {
     subdfx$metaci97.5 <- apply(thetas, 2, function(x) quantile(x, .975))
 
     ## Add on global
-    recorded.base <- subdfx[, c('regid', 'param', 'mu', 'sd', 'ci2.5', 'ci25', 'ci50', 'ci75', 'ci97.5', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible')]
+    recorded.base <- subdfx[, c('regid', 'param', 'mu', 'sd', 'ci2.5', 'ci25', 'ci50', 'ci75', 'ci97.5', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible', 'rhat')]
     recorded.base$group <- "Raw"
     recorded.meta <- subdfx[, c('regid', 'param', 'metamu', 'metasd', 'metaci2.5', 'metaci25', 'metaci50', 'metaci75', 'metaci97.5', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible')]
     names(recorded.meta) <- c('regid', 'param', 'mu', 'sd', 'ci2.5', 'ci25', 'ci50', 'ci75', 'ci97.5', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible')
+    recorded.meta$rhat <- NA
     recorded.meta$group <- "Combined"
-    recorded.glob <- data.frame(regid=paste(country, region, ""), param, mu=mean(la0$mu), sd=sd(la0$mu), ci2.5=quantile(la0$mu, .025), ci25=quantile(la0$mu, .25), ci50=quantile(la0$mu, .5), ci75=quantile(la0$mu, .75), ci97.5=quantile(la0$mu, .975), Country=country, Region=region, Locality="", population=sum(subdfx$population), lowest_level=0, implausible=max(subdfx$implausible), group="Combined")
+    recorded.glob <- data.frame(regid=paste(country, region, ""), param, mu=mean(la0$mu), sd=sd(la0$mu), ci2.5=quantile(la0$mu, .025), ci25=quantile(la0$mu, .25), ci50=quantile(la0$mu, .5), ci75=quantile(la0$mu, .75), ci97.5=quantile(la0$mu, .975), Country=country, Region=region, Locality="", population=sum(subdfx$population), lowest_level=0, implausible=max(subdfx$implausible), rhat=NA, group="Combined")
     recorded <- rbind(recorded.base, recorded.meta, recorded.glob)
 
     recorded
