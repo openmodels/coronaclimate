@@ -31,6 +31,9 @@ data {
   real<lower=0> sigma[I]; // s.e. of effect estimates
   real lobound;
   real hibound;
+  real mu_prior;
+  real<lower=0> mu_prior_sd;
+  real<lower=0> tau_prior;
 }
 parameters {
   real<lower=lobound, upper=hibound> mu;
@@ -45,6 +48,8 @@ transformed parameters {
 model {
   target += normal_lpdf(eta | 0, 1);
   target += normal_lpdf(beta | theta, sigma);
+  mu ~ normal(mu_prior, mu_prior_sd);
+  tau ~ cauchy(0, tau_prior);
 }
 "
 
@@ -54,12 +59,32 @@ load("../../cases/panel-prepped_MLI.RData")
 df2 <- df[, c('regid', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible')] %>% group_by(regid) %>% summarize(Country=Country[1], Region=Region[1], Locality=Locality[1], population=mean(population), lowest_level=min(lowest_level), implausible=max(implausible))
 
 estimate.region <- function(subdfx, param, country, region) {
+    if (nrow(subdfx) > 100) {
+        subsubs <- floor(sqrt(nrow(subdfx)))
+        subwhich <- sample(1:subsubs, nrow(subdfx), replace=T)
+
+        recorded <- data.frame()
+        subglobs <- data.frame()
+        for (ss in 1:subsubs) {
+            subrecorded <- estimate.region(subdfx[subwhich == ss,], param, country, region)
+            recorded <- rbind(recorded, subrecorded[-nrow(subrecorded),])
+            subglobs <- rbind(subglobs, subrecorded[nrow(subrecorded),])
+        }
+
+        fullglob <- estimate.region(subglobs[, -ncol(subglobs)], param, country, region)
+        recorded <- rbind(recorded, fullglob)
+        return(recorded)
+    }
+
     print(c(param, country, region))
     stan.data <- list(I=nrow(subdfx), beta=subdfx$mu, sigma=subdfx$sd,
-                      lobound=bounds[[param]][1], hibound=bounds[[param]][2])
+                      lobound=min(subdfx$mu), hibound=max(subdfx$mu),
+                      mu_prior=weighted.mean(subdfx$mu, 1/subdfx$sd^2),
+                      mu_prior_sd=sqrt(var(subdfx$mu) + mean(subdfx$sd)^2) / sqrt(nrow(subdfx)),
+                      tau_prior=sd(subdfx$mu))
 
     fit0 <- sampling(stan.model0.compiled, data=stan.data,
-                     iter=1000, chains=4, open_progress=F)
+                     iter=2000, chains=4, open_progress=F)
     la0 <- extract(fit0, permute=T)
     if (is.null(la0)) {
         recorded.base <- subdfx[, c('regid', 'param', 'mu', 'sd', 'ci2.5', 'ci25', 'ci50', 'ci75', 'ci97.5', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible', 'rhat')]

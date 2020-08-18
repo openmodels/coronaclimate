@@ -15,9 +15,11 @@ for (rr in 1:length(result.files)) {
     filepath <- file.path("../../results", result.files[rr])
     df <- read.csv(filepath)
     for (param in unique(df$param)) {
-        mumu <- mean(df$mu[df$param == param], na.rm=T)
-        sdmu <- sd(df$mu[df$param == param], na.rm=T)
-        musd <- mean(df$sd[df$param == param], na.rm=T)
+        meanmu <- mean(df$mu[df$param == param], na.rm=T)
+        mean25 <- mean(df$ci25[df$param == param], na.rm=T)
+        mean75 <- mean(df$ci75[df$param == param], na.rm=T)
+        mu25q <- quantile(df$mu[df$param == param], .25, na.rm=T)
+        mu75q <- quantile(df$mu[df$param == param], .75, na.rm=T)
         if ('rhat' %in% names(df))
             rhat <- mean(df$rhat[df$param == param], na.rm=T)
         else
@@ -33,16 +35,17 @@ for (rr in 1:length(result.files)) {
         ymin <- NA
         ymax <- NA
         if (substring(as.character(param), 1, 2) == 'e.')
-            if (!is.na(mumu) && !is.na(sdmu) && !is.na(musd) && (mumu + sdmu > 20 || mumu - sdmu < -20 || mumu + musd > 20 || mumu - musd < -20)) {
+            if (!is.na(mean25) && (mean75 > 20 || mean25 < -20 || mu75q > 20 || mu25q < -20)) {
                 ymin <- -20
                 ymax <- 20
-                musd <- NA
-                sdmu <- NA
-                mumu <- NA
+                meanmu <- NA
+                mean25 <- NA
+                mean75 <- NA
+                mu25q <- NA
+                mu75q <- NA
             }
 
-
-        fits <- rbind(fits, data.frame(model=result.names[rr], param, param.name=coeff.names[[param]], mu=mumu, sd=sdmu, tau=musd, ymin, ymax, rhat=rhat))
+        fits <- rbind(fits, data.frame(model=result.names[rr], param, param.name=coeff.names[[param]], meanmu, mean25, mean75, mu25q, mu75q, ymin, ymax, rhat=rhat))
     }
     if ('rhat' %in% names(df))
         rhat <- median(df$rhat, na.rm=T)
@@ -60,10 +63,10 @@ library(ggplot2)
 fits$model <- factor(fits$model, levels=rev(result.names))
 fits$param.name <- factor(fits$param.name, coeff.order)
 
-ggplot(fits, aes(model, mu)) +
+ggplot(fits, aes(model, meanmu)) +
     facet_wrap(~ param.name, scales='free_x', ncol=7) +
-    geom_errorbar(aes(ymin=mu-sd, ymax=mu+sd)) +
-    geom_linerange(aes(ymin=mu-tau, ymax=mu+tau), col='red', linetype='dashed') +
+    geom_errorbar(aes(ymin=mean25, ymax=mean75)) +
+    geom_linerange(aes(ymin=mu25q, ymax=mu75q), col='red', linetype='dashed') +
     geom_linerange(aes(ymin=ymin, ymax=ymax), col='blue') +
     coord_flip() + scale_y_continuous(expand=c(.01, .01)) + theme_bw() +
     xlab(NULL) + ylab("Parameter Estimate")
