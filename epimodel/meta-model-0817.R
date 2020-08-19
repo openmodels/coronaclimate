@@ -38,16 +38,11 @@ data {
 parameters {
   real<lower=lobound, upper=hibound> mu;
   real<lower=0> tau;
-  real eta[I];
-}
-transformed parameters {
-  real theta[I];
-  for (ii in 1:I)
-    theta[ii] = mu + tau * eta[ii];
+  real<lower=lobound, upper=hibound> theta;
 }
 model {
-  target += normal_lpdf(eta | 0, 1);
-  target += normal_lpdf(beta | theta, sigma);
+  theta ~ normal(mu, tau);
+  beta ~ normal(theta, sigma);
   mu ~ normal(mu_prior, mu_prior_sd);
   tau ~ cauchy(0, tau_prior);
 }

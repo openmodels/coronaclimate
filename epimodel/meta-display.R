@@ -25,8 +25,8 @@ allrecorded$paramgroup[allrecorded$param %in% c('omega', 'deathrate', 'deathomeg
 allrecorded$paramgroup[allrecorded$param %in% c('mobility_slope', 'portion_early', 'alpha')] <- "Behavioural Response"
 
 for (paramgroup in unique(allrecorded$paramgroup)) {
-    botlev <- quantile(allrecorded$mu[allrecorded$paramgroup == paramgroup], .01)
-    toplev <- quantile(allrecorded$mu[allrecorded$paramgroup == paramgroup], .99)
+    botlev <- quantile(allrecorded$mu[allrecorded$paramgroup == paramgroup], .01, na.rm=T)
+    toplev <- quantile(allrecorded$mu[allrecorded$paramgroup == paramgroup], .99, na.rm=T)
     allrecorded$paramgroup[allrecorded$paramgroup == paramgroup & allrecorded$mu < botlev] <- "Drop"
     allrecorded$paramgroup[allrecorded$paramgroup == paramgroup & allrecorded$mu > toplev] <- "Drop"
 }
