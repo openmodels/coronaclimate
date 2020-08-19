@@ -61,7 +61,7 @@ estimate.region <- function(subdfx, param, country, region) {
         recorded <- data.frame()
         subglobs <- data.frame()
         for (ss in 1:subsubs) {
-            subrecorded <- estimate.region(subdfx[subwhich == ss,], param, country, region)
+            subrecorded <- estimate.region(subdfx[subwhich == ss,], param, paste0(country, '-', ss), paste(region, '-', ss))
             recorded <- rbind(recorded, subrecorded[-nrow(subrecorded),])
             subglobs <- rbind(subglobs, subrecorded[nrow(subrecorded),])
         }
