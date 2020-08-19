@@ -38,7 +38,7 @@ data {
 parameters {
   real<lower=lobound, upper=hibound> mu;
   real<lower=0> tau;
-  real<lower=lobound, upper=hibound> theta;
+  real<lower=lobound, upper=hibound> theta[I];
 }
 model {
   theta ~ normal(mu, tau);
