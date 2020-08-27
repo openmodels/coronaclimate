@@ -316,12 +316,26 @@ for (regid in unique(df$regid)) {
 
         stan.data$ddeaths_true <- diff(subdf$Deaths) + 1
 
-        fit <- sampling(stan.compiled.deaths, data=stan.data, open_progress=F, control=list(max_treedepth=15))
+        fit <- tryCatch({
+	    sampling(stan.compiled.deaths, data=stan.data, open_progress=F, control=list(max_treedepth=15))
+	}, error=function(e) {
+	    NULL
+	})
     } else {
-        fit <- sampling(stan.compiled.nodice, data=stan.data, open_progress=F)
+        fit <- tryCatch({
+	    sampling(stan.compiled.nodice, data=stan.data, open_progress=F)
+	}, error=function(e) {
+	    NULL
+	})
     }
 
-    la <- extract(fit, permute=T)
+    la <- tryCatch({
+        extract(fit, permute=T)
+    }, error=function(e) {
+        NULL
+    })
+    if (is.null(la))
+      next
     rhats <- stan_rhat(fit)$data
 
     resrow <- rbind(get.paramdf(regid, 'alpha', la$alpha, rhats),

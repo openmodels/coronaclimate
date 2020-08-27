@@ -6,13 +6,13 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-results <- read.csv("../../results/epimodel-0806-x5.csv")
-outfile <- "../../results/epimodel-meta-0806-x5.csv"
+results <- read.csv("../../results/epimodel-0817.csv")
+outfile <- "../../results/epimodel-meta-0817.csv"
 
 results$param <- factor(results$param, c('alpha', 'invgamma', 'invsigma',
                                          'omega', 'mobility_slope', 'portion_early',
 					 'deathrate', 'deathomegaplus', 'error',
-                                         'e.absh', 'e.r', 'e.tp'))
+                                         'e.absh', 'e.r', 'e.t2m', 'e.tp'))
 ggplot(results, aes(mu)) +
     facet_wrap(~ param, scales='free') +
     geom_histogram() + xlab(NULL) + ylab(NULL) + theme_bw()
@@ -22,7 +22,7 @@ ggplot(results, aes(mu)) +
 bounds <- list("alpha"=c(0, 10), "invgamma"=c(2, 100), "invsigma"=c(2, 100),
        	       "omega"=c(0, 1), "mobility_slope"=c(-1, 10), "portion_early"=c(0, 1),
 	       "deathrate"=c(0, 1), "deathomegaplus"=c(0, 1), "error"=c(0, 10),
-               "e.absh"=c(-20, 20), "e.r"=c(-20, 20), "e.tp"=c(-20, 20))
+               "e.absh"=c(-20, 20), "e.r"=c(-20, 20), "e.t2m"=c(-20, 20), "e.tp"=c(-20, 20))
 
 stan.model0 <- "
 data {
