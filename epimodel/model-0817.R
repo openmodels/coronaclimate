@@ -346,7 +346,9 @@ for (regid in unique(df$regid)) {
                     get.paramdf(regid, 'portion_early', la$portion_early, rhats),
                     get.paramdf(regid, 'deathrate', la$deathrate, rhats),
                     get.paramdf(regid, 'deathomegaplus', la$deathomegaplus, rhats),
-                    get.paramdf(regid, 'error', la$error, rhats))
+                    get.paramdf(regid, 'error', la$error, rhats),
+                    get.paramdf(regid, 'logbeta', la$logbeta, rhats),
+                    get.paramdf(regid, 'eein', la$eein, rhats))
     for (kk in 1:length(weather))
         resrow <- rbind(resrow, get.paramdf(regid, paste0('e.', weather[kk]), la$effect[,kk], rhats, rhatparam=paste0('effect\\[', kk, '\\]')))
 

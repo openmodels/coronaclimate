@@ -9,13 +9,57 @@ rstan_options(auto_write = TRUE)
 results <- read.csv("../../results/epimodel-0817.csv")
 outfile <- "../../results/epimodel-meta-0817.csv"
 
-results$param <- factor(results$param, c('alpha', 'invgamma', 'invsigma',
-                                         'omega', 'mobility_slope', 'portion_early',
+results$param <- factor(results$param, c('alpha', 'invgamma', 'invsigma', 'mobility_slope',
+                                         'omega', 'portion_early',
 					 'deathrate', 'deathomegaplus', 'error',
                                          'e.absh', 'e.r', 'e.t2m', 'e.tp'))
-ggplot(results, aes(mu)) +
-    facet_wrap(~ param, scales='free') +
+
+## For plot, drop beyond the 99th
+results$showit <- T
+for (param in unique(results$param)) {
+    limits <- quantile(results$mu[results$param == param], c(.025, .975), na.rm=T)
+    results$showit[results$param == param] <- !is.na(results$mu[results$param == param]) & results$mu[results$param == param] > limits[1] & results$mu[results$param == param] < limits[2]
+}
+
+results$paramlabel <- as.character(results$param)
+results$paramlabel[results$param == 'mobility_slope'] <- "Mobility Adjustment"
+results$paramlabel[results$param == 'alpha'] <- "Gradual Adjustment Rate"
+results$paramlabel[results$param == 'invsigma'] <- "Incubation Period (days)"
+results$paramlabel[results$param == 'invgamma'] <- "Infectious Period (days)"
+results$paramlabel[results$param == 'portion_early'] <- "Portion Detected Early"
+results$paramlabel[results$param == 'omega'] <- "Recording Rate"
+results$paramlabel[results$param == 'deathrate'] <- "Death Rate"
+results$paramlabel[results$param == 'deathomegaplus'] <- "Extra Record of Deaths"
+results$paramlabel[results$param == 'portion_early'] <- "Portion Reported Early"
+results$paramlabel[results$param == 'e.t2m'] <- "Air Temperature Effect"
+results$paramlabel[results$param == 'e.tp'] <- "Total Precipitation Effect"
+results$paramlabel[results$param == 'e.r'] <- "Relative Humidity Effect"
+results$paramlabel[results$param == 'e.absh'] <- "Absolute Humidity Effect"
+
+results$paramlabel <- factor(results$paramlabel, levels=c("Gradual Adjustment Rate", "Mobility Adjustment", "Incubation Period (days)", "Infectious Period (days)", "Portion Detected Early", "Recording Rate", "Death Rate", "Extra Record of Deaths", "Portion Reported Early", "Air Temperature Effect", "Total Precipitation Effect", "Relative Humidity Effect", "Absolute Humidity Effect"))
+
+ggplot(subset(results, param != 'error' & showit), aes(mu)) +
+    facet_wrap(~ paramlabel, scales='free') +
     geom_histogram() + xlab(NULL) + ylab(NULL) + theme_bw()
+
+## Scatter plot
+library(reshape2)
+results2 <- dcast(subset(results, param != 'error' & showit), regid ~ param, value.var='mu')
+
+# Correlation panel
+panel.cor <- function(x, y){
+    usr <- par("usr"); on.exit(par(usr))
+    par(usr=c(0, 1, 0, 1))
+    r <- round(cor(x, y, use='complete', method='spearman'), digits=2)
+    txt <- as.character(r)
+    text(0.5, 0.5, txt)
+}
+# Customize upper panel
+upper.panel<-function(x, y){
+  points(x, y, pch=19, cex=.01)
+}
+
+pairs(results2[,-1], lower.panel=panel.cor, upper.panel=upper.panel)
 
 ## Geospatial meta-analysis
 

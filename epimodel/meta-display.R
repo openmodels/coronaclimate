@@ -5,7 +5,7 @@ library(ggplot2)
 library(scales)
 library(PBSmapping)
 
-outfile <- "../../results/epimodel-meta-0806-x5.csv"
+outfile <- "../../results/epimodel-meta-0817.csv"
 allrecorded <- read.csv(outfile)
 
 ## Show all results
@@ -18,11 +18,29 @@ for (pp in unique(allrecorded$param)) {
     ggsave(paste0("../../figures/epimodel-param-", pp, ".png"), width=5, height=7)
 }
 
+allrecorded$paramlabel <- as.character(allrecorded$param)
+allrecorded$paramlabel[allrecorded$param == 'mobility_slope'] <- "Mobility Adjustment"
+allrecorded$paramlabel[allrecorded$param == 'alpha'] <- "Gradual Adjustment Rate"
+allrecorded$paramlabel[allrecorded$param == 'invsigma'] <- "Incubation Period (days)"
+allrecorded$paramlabel[allrecorded$param == 'invgamma'] <- "Infectious Period (days)"
+allrecorded$paramlabel[allrecorded$param == 'portion_early'] <- "Portion Detected Early"
+allrecorded$paramlabel[allrecorded$param == 'omega'] <- "Recording Rate"
+allrecorded$paramlabel[allrecorded$param == 'deathrate'] <- "Death Rate"
+allrecorded$paramlabel[allrecorded$param == 'deathomegaplus'] <- "Extra Record of Deaths"
+allrecorded$paramlabel[allrecorded$param == 'portion_early'] <- "Portion Reported Early"
+allrecorded$paramlabel[allrecorded$param == 'mobility_slope'] <- "Mobility Transmission Effect"
+allrecorded$paramlabel[allrecorded$param == 'e.t2m'] <- "Air Temperature Effect"
+allrecorded$paramlabel[allrecorded$param == 'e.tp'] <- "Total Precipitation Effect"
+allrecorded$paramlabel[allrecorded$param == 'e.r'] <- "Relative Humidity Effect"
+allrecorded$paramlabel[allrecorded$param == 'e.absh'] <- "Absolute Humidity Effect"
+
+allrecorded$paramlabel <- factor(allrecorded$paramlabel, levels=rev(c("Gradual Adjustment Rate", "Mobility Adjustment", "Incubation Period (days)", "Infectious Period (days)", "Portion Detected Early", "Recording Rate", "Death Rate", "Extra Record of Deaths", "Portion Reported Early", "Mobility Transmission Effect", "Air Temperature Effect", "Total Precipitation Effect", "Relative Humidity Effect", "Absolute Humidity Effect")))
+
 allrecorded$paramgroup <- "Drop"
 allrecorded$paramgroup[allrecorded$param %in% c('invsigma', 'invkappa', 'invgamma')] <- "Period Lengths"
-allrecorded$paramgroup[allrecorded$param %in% c('e.tp', 'e.r', 'e.absh')] <- "Weather Response"
-allrecorded$paramgroup[allrecorded$param %in% c('omega', 'deathrate', 'deathomegaplus')] <- "Proportional Response"
-allrecorded$paramgroup[allrecorded$param %in% c('mobility_slope', 'portion_early', 'alpha')] <- "Behavioural Response"
+allrecorded$paramgroup[allrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh')] <- "Weather Response"
+allrecorded$paramgroup[allrecorded$param %in% c('portion_early', 'omega', 'deathrate', 'deathomegaplus')] <- "Proportional Response"
+allrecorded$paramgroup[allrecorded$param %in% c('mobility_slope', 'alpha')] <- "Behavioural Response"
 
 for (paramgroup in unique(allrecorded$paramgroup)) {
     botlev <- quantile(allrecorded$mu[allrecorded$paramgroup == paramgroup], .01, na.rm=T)
@@ -31,10 +49,13 @@ for (paramgroup in unique(allrecorded$paramgroup)) {
     allrecorded$paramgroup[allrecorded$paramgroup == paramgroup & allrecorded$mu > toplev] <- "Drop"
 }
 
-ggplot(subset(allrecorded, Country == "" & paramgroup != "Drop"), aes(param, mu)) +
+allrecorded$paramgroup[grep("-\\d", allrecorded$Country)] <- "Drop"
+
+ggplot(subset(allrecorded, Country == "" & paramgroup != "Drop"), aes(paramlabel, mu)) +
     facet_wrap(~ paramgroup, ncol=1, scales="free") +
     coord_flip() +
-    geom_violin(data=subset(allrecorded, Country != "" & Region == "" & paramgroup != "Drop"), fill=muted('blue'), alpha=.5, linetype='blank', scale="width") +
+    geom_violin(data=subset(allrecorded, Country != "" & group == "Raw" & Region == "" & paramgroup != "Drop"), colour="#83242480", scale="width") + # muted('red'), alpha=.5
+    geom_violin(data=subset(allrecorded, Country != "" & group == "Combined" & Region == "" & paramgroup != "Drop"), fill=muted('blue'), alpha=.5, linetype='blank', scale="width") +
     geom_point() + geom_errorbar(aes(ymin=ci2.5, ymax=ci97.5)) +
     theme_bw() + ylab("Hyper-paramater value and 95% CI") + xlab(NULL)
 
@@ -61,4 +82,22 @@ for (pp in unique(allrecorded$param)) {
     ggsave(paste0("../../figures/epimodel-param-map-", pp, ".png"), width=8, height=3)
 }
 
+## Plot the US
 
+allrecorded2 <- subset(allrecorded, Country == "USA" & Locality == "" & group == "Combined")
+
+shp <- importShapefile("../../shapefiles/gadm36_USA_shp/gadm36_USA_1_simple.shp")
+polydata <- attr(shp, 'PolyData')
+
+polydata2 <- polydata %>% left_join(data.frame(NAME_1=state.name, Region=state.abb))
+allrecorded3 <- allrecorded2 %>% left_join(polydata2[, c('Region', 'PID')])
+
+for (pp in unique(allrecorded$param)) {
+    shp2 <- shp %>% left_join(allrecorded3[allrecorded3$param == pp, c('PID', 'mu')])
+
+    ggplot(shp2, aes(X, Y, fill=mu, group=paste(PID, SID))) +
+        geom_polygon() + scale_y_continuous(name=NULL, limits=c(25, 50)) +
+        scale_x_continuous(name=NULL, limits=c(-125, -67)) + theme_bw() + scale_fill_continuous(name=pp)
+
+    ggsave(paste0("../../figures/epimodel-param-usmap-", pp, ".png"), width=8, height=4)
+}
