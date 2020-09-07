@@ -3,7 +3,7 @@
 source("../configs.R")
 
 casespath <- "../../cases/panel-prepped_MLI.RData"
-outpath <- "../../results/epimodel-0817.csv"
+outpath <- "../../results/epimodel-0907.csv"
 weather <- c('absh', 'r', 't2m', 'tp')
 regfilter <- function(rows) T
 do.multiproc <- T
