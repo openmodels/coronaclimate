@@ -104,9 +104,9 @@ transformed parameters {
 
     if (tt - early0 > 1) {
       if (tt - late0 > 1)
-        dcc[tt-1] = (omega + dot_product(weather[tt-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1) + (1 - portion_early) * sum(new_ee1[max(1, tt-late1-1):(tt-late0-1)]) / (late1-late0+1));
+        dcc[tt-1] = (omega + dot_product(weather[tt-early0-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1) + (1 - portion_early) * sum(new_ee1[max(1, tt-late1-1):(tt-late0-1)]) / (late1-late0+1));
       else
-        dcc[tt-1] = (omega + dot_product(weather[tt-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1));
+        dcc[tt-1] = (omega + dot_product(weather[tt-early0-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1));
     } else
       dcc[tt-1] = 0;
   }
@@ -210,9 +210,9 @@ transformed parameters {
 
     if (tt - early0 > 1) {
       if (tt - late0 > 1)
-        dcc[tt-1] = (omega + dot_product(weather[tt-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1) + (1 - portion_early) * sum(new_ee1[max(1, tt-late1-1):(tt-late0-1)]) / (late1-late0+1));
+        dcc[tt-1] = (omega + dot_product(weather[tt-early0-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1) + (1 - portion_early) * sum(new_ee1[max(1, tt-late1-1):(tt-late0-1)]) / (late1-late0+1));
       else
-        dcc[tt-1] = (omega + dot_product(weather[tt-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1));
+        dcc[tt-1] = (omega + dot_product(weather[tt-early0-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1));
     } else
       dcc[tt-1] = 0;
 
