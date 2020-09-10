@@ -2,14 +2,17 @@
 
 library(dplyr)
 library(ggplot2)
+library(SDMTools)
 library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
+weight <- 'pop'
+
 do.display <- F
 
 results <- read.csv("../../results-20200910/epimodel-0907.csv")
-outfile <- "../../results-20200910/epimodel-meta-0907.csv"
+outfile <- paste0("../../results-20200910/epimodel-meta-0907-", weight, ".csv")
 
 if (do.display) {
 results$param <- factor(results$param, c('alpha', 'invgamma', 'invsigma', 'mobility_slope',
@@ -82,8 +85,9 @@ bounds <- list("alpha"=c(0, 10), "invgamma"=c(2, 100), "invsigma"=c(2, 100),
 stan.model0 <- "
 data {
   int<lower=0> I; // number of studies
-  real beta[I]; // estimated treatment effects
-  real<lower=0> sigma[I]; // s.e. of effect estimates
+  vector[I] beta; // estimated treatment effects
+  vector<lower=0>[I] sigma; // s.e. of effect estimates
+  vector<lower=0>[I] weight; // weight of each study
   real lobound;
   real hibound;
   real mu_prior;
@@ -93,10 +97,12 @@ data {
 parameters {
   real<lower=lobound, upper=hibound> mu;
   real<lower=0> tau;
-  real<lower=lobound, upper=hibound> theta[I];
+  vector<lower=lobound, upper=hibound>[I] theta;
 }
 model {
-  theta ~ normal(mu, tau);
+  for (ii in 1:I)
+    target += weight[ii] * normal_lpdf(theta[ii] | mu, tau);
+  // theta ~ normal(mu, tau);
   beta ~ normal(theta, sigma);
   mu ~ normal(mu_prior, mu_prior_sd);
   tau ~ cauchy(0, tau_prior);
@@ -104,6 +110,16 @@ model {
 "
 
 stan.model0.compiled <- stan_model(model_code=stan.model0)
+
+stan.data <- list(I=2, beta=c(0, 1), sigma=c(1, 1), weight=c(1, 100),
+                  lobound=-100, hibound=100,
+                  mu_prior=.5,
+                  mu_prior_sd=1000,
+                  tau_prior=1000)
+
+fit0 <- sampling(stan.model0.compiled, data=stan.data,
+                 iter=2000, chains=4, open_progress=F)
+fit0
 
 load("../../cases/panel-prepped_MLI.RData")
 df2 <- df[, c('regid', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible')] %>% group_by(regid) %>% summarize(Country=Country[1], Region=Region[1], Locality=Locality[1], population=mean(population), lowest_level=min(lowest_level), implausible=max(implausible))
@@ -127,11 +143,19 @@ estimate.region <- function(subdfx, param, country, region) {
     }
 
     print(c(param, country, region))
-    stan.data <- list(I=nrow(subdfx), beta=subdfx$mu, sigma=subdfx$sd,
-                      lobound=min(subdfx$mu), hibound=max(subdfx$mu),
-                      mu_prior=weighted.mean(subdfx$mu, 1/subdfx$sd^2),
-                      mu_prior_sd=sqrt(var(subdfx$mu) + mean(subdfx$sd)^2) / sqrt(nrow(subdfx)),
-                      tau_prior=sd(subdfx$mu))
+    if (weight == 'pop') {
+        stan.data <- list(I=nrow(subdfx), beta=subdfx$mu, sigma=subdfx$sd, weight=subdfx$population,
+                          lobound=min(subdfx$mu), hibound=max(subdfx$mu),
+                          mu_prior=weighted.mean(subdfx$mu, subdfx$population / subdfx$sd^2),
+                          mu_prior_sd=sqrt(wt.var(subdfx$mu, subdfx$population) + weighted.mean(subdfx$sd, subdfx$population)^2) / sqrt(nrow(subdfx)),
+                          tau_prior=wt.sd(subdfx$mu, subdfx$population))
+    } else {
+        stan.data <- list(I=nrow(subdfx), beta=subdfx$mu, sigma=subdfx$sd, weight=rep(1, nrow(subdfx)),
+                          lobound=min(subdfx$mu), hibound=max(subdfx$mu),
+                          mu_prior=weighted.mean(subdfx$mu, 1 / subdfx$sd^2),
+                          mu_prior_sd=sqrt(var(subdfx$mu) + mean(subdfx$sd)^2) / sqrt(nrow(subdfx)),
+                          tau_prior=sd(subdfx$mu))
+    }
 
     fit0 <- sampling(stan.model0.compiled, data=stan.data,
                      iter=2000, chains=4, open_progress=F)

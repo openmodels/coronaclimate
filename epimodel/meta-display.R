@@ -5,7 +5,7 @@ library(ggplot2)
 library(scales)
 library(PBSmapping)
 
-outfile <- "../../results/epimodel-meta-0817.csv"
+outfile <- "../../results/epimodel-meta-0907.csv"
 allrecorded <- read.csv(outfile)
 
 ## Show all results
@@ -29,16 +29,21 @@ allrecorded$paramlabel[allrecorded$param == 'deathrate'] <- "Death Rate"
 allrecorded$paramlabel[allrecorded$param == 'deathomegaplus'] <- "Extra Record of Deaths"
 allrecorded$paramlabel[allrecorded$param == 'portion_early'] <- "Portion Reported Early"
 allrecorded$paramlabel[allrecorded$param == 'mobility_slope'] <- "Mobility Transmission Effect"
-allrecorded$paramlabel[allrecorded$param == 'e.t2m'] <- "Air Temperature Effect"
-allrecorded$paramlabel[allrecorded$param == 'e.tp'] <- "Total Precipitation Effect"
-allrecorded$paramlabel[allrecorded$param == 'e.r'] <- "Relative Humidity Effect"
-allrecorded$paramlabel[allrecorded$param == 'e.absh'] <- "Absolute Humidity Effect"
+allrecorded$paramlabel[allrecorded$param == 'e.t2m'] <- "Air Temperature Trans."
+allrecorded$paramlabel[allrecorded$param == 'e.tp'] <- "Total Precipitation Trans."
+allrecorded$paramlabel[allrecorded$param == 'e.r'] <- "Relative Humidity Trans."
+allrecorded$paramlabel[allrecorded$param == 'e.absh'] <- "Absolute Humidity Trans."
+allrecorded$paramlabel[allrecorded$param == 'o.t2m'] <- "Air Temperature Detect"
+allrecorded$paramlabel[allrecorded$param == 'o.tp'] <- "Total Precipitation Detect"
+allrecorded$paramlabel[allrecorded$param == 'o.r'] <- "Relative Humidity Detect"
+allrecorded$paramlabel[allrecorded$param == 'o.absh'] <- "Absolute Humidity Detect"
 
-allrecorded$paramlabel <- factor(allrecorded$paramlabel, levels=rev(c("Gradual Adjustment Rate", "Mobility Adjustment", "Incubation Period (days)", "Infectious Period (days)", "Portion Detected Early", "Recording Rate", "Death Rate", "Extra Record of Deaths", "Portion Reported Early", "Mobility Transmission Effect", "Air Temperature Effect", "Total Precipitation Effect", "Relative Humidity Effect", "Absolute Humidity Effect")))
+allrecorded$paramlabel <- factor(allrecorded$paramlabel, levels=rev(c("Gradual Adjustment Rate", "Mobility Adjustment", "Incubation Period (days)", "Infectious Period (days)", "Portion Detected Early", "Recording Rate", "Death Rate", "Extra Record of Deaths", "Portion Reported Early", "Mobility Transmission Effect", "Air Temperature Trans.", "Total Precipitation Trans.", "Relative Humidity Trans.", "Absolute Humidity Trans.", "Air Temperature Detect", "Total Precipitation Detect", "Relative Humidity Detect", "Absolute Humidity Detect")))
 
 allrecorded$paramgroup <- "Drop"
 allrecorded$paramgroup[allrecorded$param %in% c('invsigma', 'invkappa', 'invgamma')] <- "Period Lengths"
-allrecorded$paramgroup[allrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh')] <- "Weather Response"
+allrecorded$paramgroup[allrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh')] <- "Weather on Transmission"
+allrecorded$paramgroup[allrecorded$param %in% c('o.t2m', 'o.tp', 'o.r', 'o.absh')] <- "Weather on Detection"
 allrecorded$paramgroup[allrecorded$param %in% c('portion_early', 'omega', 'deathrate', 'deathomegaplus')] <- "Proportional Response"
 allrecorded$paramgroup[allrecorded$param %in% c('mobility_slope', 'alpha')] <- "Behavioural Response"
 
@@ -62,7 +67,8 @@ ggplot(subset(allrecorded, Country == "" & paramgroup != "Drop"), aes(paramlabel
 ## Prepare to map
 
 ## Grab ALPHA.3 from df
-load("../../cases/panel-prepped_MLI.RData")
+## load("../../cases/panel-prepped_MLI.RData")
+load("~/Downloads/panel-prepped_MLI.RData")
 df2 <- df[, c('Country', 'ALPHA.3')] %>% group_by(Country) %>% summarize(ALPHA.3=ALPHA.3[1])
 allrecorded2 <- subset(allrecorded, Region == "" & Locality == "" & group == "Combined") %>% left_join(df2)
 
