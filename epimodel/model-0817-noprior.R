@@ -3,7 +3,7 @@
 source("../configs.R")
 
 casespath <- "../../cases/panel-prepped_MLI.RData"
-outpath <- "../../results/epimodel-0907.csv"
+outpath <- "../../results/epimodel-0817-noprior.csv"
 weather <- c('absh', 'r', 't2m', 'tp')
 regfilter <- function(rows) T
 do.multiproc <- T
@@ -60,7 +60,6 @@ parameters {
 
   // effect of weather
   vector<lower=-1, upper=1>[K] effect;
-  vector<lower=-1, upper=1>[K] omegaeffect;
 
   // affine transform for mobility
   real<lower=0, upper=10> mobility_slope;
@@ -104,9 +103,9 @@ transformed parameters {
 
     if (tt - early0 > 1) {
       if (tt - late0 > 1)
-        dcc[tt-1] = (omega + dot_product(weather[tt-early0-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1) + (1 - portion_early) * sum(new_ee1[max(1, tt-late1-1):(tt-late0-1)]) / (late1-late0+1));
+        dcc[tt-1] = omega * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1) + (1 - portion_early) * sum(new_ee1[max(1, tt-late1-1):(tt-late0-1)]) / (late1-late0+1));
       else
-        dcc[tt-1] = (omega + dot_product(weather[tt-early0-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1));
+        dcc[tt-1] = omega * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1));
     } else
       dcc[tt-1] = 0;
   }
@@ -165,7 +164,6 @@ parameters {
 
   // effect of weather
   vector<lower=-1, upper=1>[K] effect;
-  vector<lower=-1, upper=1>[K] omegaeffect;
 
   // affine transform for mobility
   real<lower=0, upper=10> mobility_slope;
@@ -210,9 +208,9 @@ transformed parameters {
 
     if (tt - early0 > 1) {
       if (tt - late0 > 1)
-        dcc[tt-1] = (omega + dot_product(weather[tt-early0-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1) + (1 - portion_early) * sum(new_ee1[max(1, tt-late1-1):(tt-late0-1)]) / (late1-late0+1));
+        dcc[tt-1] = omega * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1) + (1 - portion_early) * sum(new_ee1[max(1, tt-late1-1):(tt-late0-1)]) / (late1-late0+1));
       else
-        dcc[tt-1] = (omega + dot_product(weather[tt-early0-1], omegaeffect)) * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1));
+        dcc[tt-1] = omega * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1));
     } else
       dcc[tt-1] = 0;
 
@@ -342,8 +340,6 @@ for (regid in unique(df$regid)) {
                     get.paramdf(regid, 'eein', la$eein, rhats))
     for (kk in 1:length(weather))
         resrow <- rbind(resrow, get.paramdf(regid, paste0('e.', weather[kk]), la$effect[,kk], rhats, rhatparam=paste0('effect\\[', kk, '\\]')))
-    for (kk in 1:length(weather))
-        resrow <- rbind(resrow, get.paramdf(regid, paste0('o.', weather[kk]), la$omegaeffect[,kk], rhats, rhatparam=paste0('effect\\[', kk, '\\]')))
 
     if (!do.multiproc) {
         results <- rbind(results, resrow)

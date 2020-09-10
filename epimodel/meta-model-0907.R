@@ -8,15 +8,16 @@ rstan_options(auto_write = TRUE)
 
 do.display <- F
 
-results <- read.csv("../../results-20200910/epimodel-0817-noprior.csv")
-outfile <- "../../results-20200910/epimodel-meta-0817-noprior.csv"
+results <- read.csv("../../results-20200910/epimodel-0907.csv")
+outfile <- "../../results-20200910/epimodel-meta-0907.csv"
 
 if (do.display) {
 results$param <- factor(results$param, c('alpha', 'invgamma', 'invsigma', 'mobility_slope',
                                          'omega', 'portion_early',
 					 'deathrate', 'deathomegaplus', 'error',
 					 'logbeta', 'eein',
-                                         'e.absh', 'e.r', 'e.t2m', 'e.tp'))
+                                         'e.absh', 'e.r', 'e.t2m', 'e.tp',
+					 'o.absh', 'o.r', 'o.t2m', 'o.tp'))
 
 ## For plot, drop beyond the 99th
 results$showit <- T
@@ -35,12 +36,16 @@ results$paramlabel[results$param == 'omega'] <- "Recording Rate"
 results$paramlabel[results$param == 'deathrate'] <- "Death Rate"
 results$paramlabel[results$param == 'deathomegaplus'] <- "Extra Record of Deaths"
 results$paramlabel[results$param == 'portion_early'] <- "Portion Reported Early"
-results$paramlabel[results$param == 'e.t2m'] <- "Air Temperature Effect"
-results$paramlabel[results$param == 'e.tp'] <- "Total Precipitation Effect"
-results$paramlabel[results$param == 'e.r'] <- "Relative Humidity Effect"
-results$paramlabel[results$param == 'e.absh'] <- "Absolute Humidity Effect"
+results$paramlabel[results$param == 'e.t2m'] <- "Air Temperature Trans."
+results$paramlabel[results$param == 'e.tp'] <- "Total Precipitation Trans."
+results$paramlabel[results$param == 'e.r'] <- "Relative Humidity Trans."
+results$paramlabel[results$param == 'e.absh'] <- "Absolute Humidity Trans."
+results$paramlabel[results$param == 'o.t2m'] <- "Air Temperature Detect"
+results$paramlabel[results$param == 'o.tp'] <- "Total Precipitation Detect"
+results$paramlabel[results$param == 'o.r'] <- "Relative Humidity Detect"
+results$paramlabel[results$param == 'o.absh'] <- "Absolute Humidity Detect"
 
-results$paramlabel <- factor(results$paramlabel, levels=c("Gradual Adjustment Rate", "Mobility Adjustment", "Incubation Period (days)", "Infectious Period (days)", "Portion Detected Early", "Recording Rate", "Death Rate", "Extra Record of Deaths", "Portion Reported Early", "Air Temperature Effect", "Total Precipitation Effect", "Relative Humidity Effect", "Absolute Humidity Effect"))
+results$paramlabel <- factor(results$paramlabel, levels=c("Gradual Adjustment Rate", "Mobility Adjustment", "Incubation Period (days)", "Infectious Period (days)", "Portion Detected Early", "Recording Rate", "Death Rate", "Extra Record of Deaths", "Portion Reported Early", "Air Temperature Trans.", "Total Precipitation Trans.", "Relative Humidity Trans.", "Absolute Humidity Trans.", "Air Temperature Detect", "Total Precipitation Detect", "Relative Humidity Detect", "Absolute Humidity Detect"))
 
 ggplot(subset(results, param != 'error' & showit), aes(mu)) +
     facet_wrap(~ paramlabel, scales='free') +
@@ -71,7 +76,8 @@ pairs(results2[,-1], lower.panel=panel.cor, upper.panel=upper.panel)
 bounds <- list("alpha"=c(0, 10), "invgamma"=c(2, 100), "invsigma"=c(2, 100),
        	       "omega"=c(0, 1), "mobility_slope"=c(-1, 10), "portion_early"=c(0, 1),
 	       "deathrate"=c(0, 1), "deathomegaplus"=c(0, 1), "error"=c(0, 10),
-               "e.absh"=c(-20, 20), "e.r"=c(-20, 20), "e.t2m"=c(-20, 20), "e.tp"=c(-20, 20))
+               "e.absh"=c(-1, 1), "e.r"=c(-1, 1), "e.t2m"=c(-1, 1), "e.tp"=c(-1, 1),
+	       "o.absh"=c(-1, 1), "o.r"=c(-1, 1), "o.t2m"=c(-1, 1), "o.tp"=c(-1, 1))
 
 stan.model0 <- "
 data {
