@@ -54,3 +54,37 @@ names(tbl) <- c("OLS", "With Prior 1", "With Prior 2", "Without Prior", "Omega E
 row.names(tbl) <- c(paste0('e.', c(weather[1], " ", weather[2], "  ", weather[3], "   ", weather[4], "    ")),
                     paste0('o.', c(weather[1], " ", weather[2], "  ", weather[3], "   ", weather[4], "    ")))
 xtable(tbl)
+
+### Report with different weighting
+
+tbl <- data.frame(OLS=c(format.regtbl(e.ols.mu[1], e.ols.se[1]),
+                        format.regtbl(e.ols.mu[2], e.ols.se[2]),
+                        format.regtbl(e.ols.mu[3], e.ols.se[3]),
+                        format.regtbl(e.ols.mu[4], e.ols.se[4]), rep(NA, 8)))
+
+for (model in c('0907', '0907-pop', '0907-nobs')) {
+    df <- read.csv(paste0('../../results/epimodel-meta-', model, '.csv'))
+    subdf <- subset(df, Country == "" & Region == "")
+
+    e.epi.mu <- c(subdf$mu[subdf$param == 'e.absh'], subdf$mu[subdf$param == 'e.r'],  subdf$mu[subdf$param == 'e.t2m'], subdf$mu[subdf$param == 'e.tp'])
+    e.epi.sd <- c(subdf$sd[subdf$param == 'e.absh'], subdf$sd[subdf$param == 'e.r'], subdf$sd[subdf$param == 'e.t2m'], subdf$sd[subdf$param == 'e.tp'])
+
+    o.epi.mu <- c(subdf$mu[subdf$param == 'o.absh'], subdf$mu[subdf$param == 'o.r'],  subdf$mu[subdf$param == 'o.t2m'], subdf$mu[subdf$param == 'o.tp'])
+    o.epi.sd <- c(subdf$sd[subdf$param == 'o.absh'], subdf$sd[subdf$param == 'o.r'], subdf$sd[subdf$param == 'o.t2m'], subdf$sd[subdf$param == 'o.tp'])
+
+    tbl[, model] <- c(format.regtbl(e.epi.mu[1], e.epi.sd[1]),
+                      format.regtbl(e.epi.mu[2], e.epi.sd[2]),
+                      format.regtbl(e.epi.mu[3], e.epi.sd[3]),
+                      format.regtbl(e.epi.mu[4], e.epi.sd[4]),
+                      format.regtbl(o.epi.mu[1], o.epi.sd[1]),
+                      format.regtbl(o.epi.mu[2], o.epi.sd[2]),
+                      format.regtbl(o.epi.mu[3], o.epi.sd[3]),
+                      format.regtbl(o.epi.mu[4], o.epi.sd[4]))
+}
+
+library(xtable)
+
+names(tbl) <- c("OLS", "By Region", "By Population", "By Observations")
+row.names(tbl) <- c(paste0('e.', c(weather[1], " ", weather[2], "  ", weather[3], "   ", weather[4], "    ")),
+                    paste0('o.', c(weather[1], " ", weather[2], "  ", weather[3], "   ", weather[4], "    ")))
+xtable(tbl)
