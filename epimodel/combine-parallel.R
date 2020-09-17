@@ -1,4 +1,4 @@
-outdir <- "../../results-20200910"
+outdir <- "../../results"
 
 finals <- list()
 
