@@ -3,7 +3,7 @@
 source("../configs.R")
 
 casespath <- "../../cases/panel-prepped_MLI.RData"
-outpath <- "../../results/epimodel-0907.csv"
+outpath <- "../../results/epimodel-0917.csv"
 weather <- c('absh', 'r', 't2m', 'tp')
 regfilter <- function(rows) T
 do.multiproc <- T
@@ -85,8 +85,7 @@ transformed parameters {
   vector<lower=0>[T] ii1; // infected
   vector<lower=0>[T] ii2;
 
-  vector<lower=0>[T-1] omega_raw; // observation rate before smoothing
-  vector<lower=0>[T-1] omega; // observation rate
+  vector[T-1] omega; // observation rate
   vector<lower=0>[T-1] dcc; // confirmed cases
 
   logbeta[1] = log(beta0);
@@ -106,8 +105,7 @@ transformed parameters {
     ii2[tt] = ii2[tt-1] + 2*ii1[tt-1]/invgamma - 2*ii2[tt-1]/invgamma;
 
     if (tt - early0 > 1) {
-      omega_raw[tt-1] = (omega0 + domega * tt + dot_product(weather[tt-early0-1], omegaeffect));
-      omega[tt-1] = omega_raw[tt-1] / (omega_raw[tt-1] + 1);
+      omega[tt-1] = (omega0 + domega * tt + dot_product(weather[tt-early0-1], omegaeffect));
 
       if (tt - late0 > 1)
         dcc[tt-1] = omega[tt-1] * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1) + (1 - portion_early) * sum(new_ee1[max(1, tt-late1-1):(tt-late0-1)]) / (late1-late0+1));
@@ -196,8 +194,7 @@ transformed parameters {
   vector<lower=0>[T] ii1; // infected
   vector<lower=0>[T] ii2;
 
-  vector<lower=0>[T-1] omega_raw; // observation rate before smoothing
-  vector<lower=0>[T-1] omega; // observation rate
+  vector[T-1] omega; // observation rate
   vector<lower=0>[T-1] dcc; // confirmed cases
   vector<lower=0>[T-1] ddeaths; // deaths
 
@@ -218,8 +215,7 @@ transformed parameters {
     ii2[tt] = ii2[tt-1] + 2*ii1[tt-1]/invgamma - 2*ii2[tt-1]/invgamma;
 
     if (tt - early0 > 1) {
-      omega_raw[tt-1] = (omega0 + domega * tt + dot_product(weather[tt-early0-1], omegaeffect));
-      omega[tt-1] = omega_raw[tt-1] / (omega_raw[tt-1] + 1);
+      omega[tt-1] = (omega0 + domega * tt + dot_product(weather[tt-early0-1], omegaeffect));
 
       if (tt - late0 > 1)
         dcc[tt-1] = omega[tt-1] * (portion_early * sum(new_ee1[max(1, tt-early1-1):(tt-early0-1)]) / (early1-early0+1) + (1 - portion_early) * sum(new_ee1[max(1, tt-late1-1):(tt-late0-1)]) / (late1-late0+1));
