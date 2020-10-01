@@ -2,23 +2,14 @@
 
 source("../configs.R")
 
-is.local <- T
-
-if (is.local) {
-    casespath <- "~/Downloads/panel_prepared_lagsAB.csv"
-} else {
-    casespath <- "../../cases/panel-prepped_MLI.RData"
-}
+casespath <- "../../cases/panel_all.csv"
 outpath <- "../../results/epimodel-0921.csv"
 weather <- c('absh', 'r', 't2m', 'tp')
 regfilter <- function(rows) T
-do.multiproc <- !is.local
+do.multiproc <- T
 
-if (is.local) {
-    df <- read.csv(casespath)
-} else {
-    load(casespath)
-}
+df <- read.csv(casespath)
+df$regid <- paste(df$Country, df$Region, df$Locality)
 
 get.paramdf <- function(regid, param, lax, rhats, rhatparam=NULL) {
     if (is.null(lax) || length(lax) == 0)
@@ -81,7 +72,7 @@ parameters {
   // latent variables
   vector<lower=0>[T-1] eein;
   vector[T-1] dlogbeta;
-  vector[T-2] dlogomega;
+  vector<lower=-.1, upper=.1>[T-2] dlogomega;
 
   real<lower=0> error;
 }
@@ -197,7 +188,7 @@ parameters {
   // latent variables
   vector<lower=0>[T-1] eein;
   vector[T-1] dlogbeta;
-  vector[T-2] dlogomega;
+  vector<lower=-.1, upper=.1>[T-2] dlogomega;
 
   real<lower=0> error;
 }
@@ -371,6 +362,7 @@ for (regid in unique(df$regid)) {
                     get.paramdf(regid, 'deathomegaplus', la$deathomegaplus, rhats),
                     get.paramdf(regid, 'error', la$error, rhats),
                     get.paramdf(regid, 'logbeta', la$logbeta, rhats),
+                    get.paramdf(regid, 'logomega', la$logomega, rhats),
                     get.paramdf(regid, 'eein', la$eein, rhats))
     for (kk in 1:length(weather))
         resrow <- rbind(resrow, get.paramdf(regid, paste0('e.', weather[kk]), la$effect[,kk], rhats, rhatparam=paste0('effect\\[', kk, '\\]')))
