@@ -1,7 +1,11 @@
 setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
 
 format.regtbl <- function(mu, se) {
+    if (is.na(mu))
+        return(c("NA", "NA"))
     mustr <- formatC(mu, digits=5, format="f")
+    if (is.na(se))
+        return(c(mustr, "NA"))
     sestr <- paste0("(", formatC(se, digits=5, format="f"), ")")
     if (abs(mu / se) > 2.575829303549)
         mustr <- paste0(mustr, "***")
@@ -21,7 +25,7 @@ tbl <- data.frame(OLS=c(format.regtbl(e.ols.mu[1], e.ols.se[1]),
                         format.regtbl(e.ols.mu[3], e.ols.se[3]),
                         format.regtbl(e.ols.mu[4], e.ols.se[4]), rep(NA, 8)))
 
-for (model in c('0817-run1', '0817', '0817-noprior', '0907')) {
+for (model in c('0817-run1', '0817', '0817-noprior', '0907', '0921-pop')) {
     df <- read.csv(paste0('../../results/epimodel-meta-', model, '.csv'))
     subdf <- subset(df, Country == "" & Region == "")
 
@@ -50,7 +54,7 @@ for (model in c('0817-run1', '0817', '0817-noprior', '0907')) {
 
 library(xtable)
 
-names(tbl) <- c("OLS", "With Prior 1", "With Prior 2", "Without Prior", "Omega Effect")
+names(tbl) <- c("OLS", "With Prior 1", "With Prior 2", "Without Prior", "Omega Effect", "Smooth Omega")
 row.names(tbl) <- c(paste0('e.', c(weather[1], " ", weather[2], "  ", weather[3], "   ", weather[4], "    ")),
                     paste0('o.', c(weather[1], " ", weather[2], "  ", weather[3], "   ", weather[4], "    ")))
 xtable(tbl)

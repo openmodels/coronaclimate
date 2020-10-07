@@ -2,83 +2,36 @@
 
 library(dplyr)
 library(ggplot2)
-library(SDMTools)
 library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-weight <- 'pop' #'region' #'nobs'
+wt.mean <- function(x,wt) {
+	s = which(is.finite(x*wt)); wt = wt[s]; x = x[s] #remove NA info
+	return( sum(wt * x)/sum(wt) ) #return the mean
+}
 
-do.display <- F
+wt.var <- function(x,wt) {
+	s = which(is.finite(x + wt)); wt = wt[s]; x = x[s] #remove NA info
+	xbar = wt.mean(x,wt) #get the weighted mean
+	return( sum(wt *(x-xbar)^2)*(sum(wt)/(sum(wt)^2-sum(wt^2))) ) #return the variance
+}
+
+wt.sd <- function(x,wt) {
+	return( sqrt(wt.var(x,wt)) ) #return the standard deviation
+}
+
+weight <- 'pop' #'region' #'nobs'
 
 results <- read.csv("../../results/epimodel-0921.csv")
 outfile <- paste0("../../results/epimodel-meta-0921-", weight, ".csv")
-
-if (do.display) {
-results$param <- factor(results$param, c('alpha', 'invgamma', 'invsigma', 'mobility_slope',
-                                         'omega', 'portion_early',
-					 'deathrate', 'deathomegaplus', 'error',
-					 'logbeta', 'eein',
-                                         'e.absh', 'e.r', 'e.t2m', 'e.tp',
-					 'o.absh', 'o.r', 'o.t2m', 'o.tp'))
-
-## For plot, drop beyond the 99th
-results$showit <- T
-for (param in unique(results$param)) {
-    limits <- quantile(results$mu[results$param == param], c(.025, .975), na.rm=T)
-    results$showit[results$param == param] <- !is.na(results$mu[results$param == param]) & results$mu[results$param == param] > limits[1] & results$mu[results$param == param] < limits[2]
-}
-
-results$paramlabel <- as.character(results$param)
-results$paramlabel[results$param == 'mobility_slope'] <- "Mobility Adjustment"
-results$paramlabel[results$param == 'alpha'] <- "Gradual Adjustment Rate"
-results$paramlabel[results$param == 'invsigma'] <- "Incubation Period (days)"
-results$paramlabel[results$param == 'invgamma'] <- "Infectious Period (days)"
-results$paramlabel[results$param == 'portion_early'] <- "Portion Detected Early"
-results$paramlabel[results$param == 'omega'] <- "Recording Rate"
-results$paramlabel[results$param == 'deathrate'] <- "Death Rate"
-results$paramlabel[results$param == 'deathomegaplus'] <- "Extra Record of Deaths"
-results$paramlabel[results$param == 'portion_early'] <- "Portion Reported Early"
-results$paramlabel[results$param == 'e.t2m'] <- "Air Temperature Trans."
-results$paramlabel[results$param == 'e.tp'] <- "Total Precipitation Trans."
-results$paramlabel[results$param == 'e.r'] <- "Relative Humidity Trans."
-results$paramlabel[results$param == 'e.absh'] <- "Absolute Humidity Trans."
-results$paramlabel[results$param == 'o.t2m'] <- "Air Temperature Detect"
-results$paramlabel[results$param == 'o.tp'] <- "Total Precipitation Detect"
-results$paramlabel[results$param == 'o.r'] <- "Relative Humidity Detect"
-results$paramlabel[results$param == 'o.absh'] <- "Absolute Humidity Detect"
-
-results$paramlabel <- factor(results$paramlabel, levels=c("Gradual Adjustment Rate", "Mobility Adjustment", "Incubation Period (days)", "Infectious Period (days)", "Portion Detected Early", "Recording Rate", "Death Rate", "Extra Record of Deaths", "Portion Reported Early", "Air Temperature Trans.", "Total Precipitation Trans.", "Relative Humidity Trans.", "Absolute Humidity Trans.", "Air Temperature Detect", "Total Precipitation Detect", "Relative Humidity Detect", "Absolute Humidity Detect"))
-
-ggplot(subset(results, param != 'error' & showit), aes(mu)) +
-    facet_wrap(~ paramlabel, scales='free') +
-    geom_histogram() + xlab(NULL) + ylab(NULL) + theme_bw()
-
-## Scatter plot
-library(reshape2)
-results2 <- dcast(subset(results, param != 'error' & showit), regid ~ param, value.var='mu')
-
-# Correlation panel
-panel.cor <- function(x, y){
-    usr <- par("usr"); on.exit(par(usr))
-    par(usr=c(0, 1, 0, 1))
-    r <- round(cor(x, y, use='complete', method='spearman'), digits=2)
-    txt <- as.character(r)
-    text(0.5, 0.5, txt)
-}
-# Customize upper panel
-upper.panel<-function(x, y){
-  points(x, y, pch=19, cex=.01)
-}
-
-pairs(results2[,-1], lower.panel=panel.cor, upper.panel=upper.panel)
-}
 
 ## Geospatial meta-analysis
 
 bounds <- list("alpha"=c(0, 10), "invgamma"=c(2, 100), "invsigma"=c(2, 100),
        	       "omega"=c(0, 1), "mobility_slope"=c(-1, 10), "portion_early"=c(0, 1),
 	       "deathrate"=c(0, 1), "deathomegaplus"=c(0, 1), "error"=c(0, 10),
+               "logbeta"=c(-10, 0), "logomega"=c(-10, 0), "eein"=c(0, 1e4),
                "e.absh"=c(-1, 1), "e.r"=c(-1, 1), "e.t2m"=c(-1, 1), "e.tp"=c(-1, 1),
 	       "o.absh"=c(-1, 1), "o.r"=c(-1, 1), "o.t2m"=c(-1, 1), "o.tp"=c(-1, 1))
 
