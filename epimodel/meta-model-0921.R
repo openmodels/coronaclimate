@@ -64,7 +64,8 @@ model {
 
 stan.model0.compiled <- stan_model(model_code=stan.model0)
 
-load("../../cases/panel-prepped_MLI.RData")
+df <- read.csv("../../cases/panel_all.csv")
+df$regid <- paste(df$Country, df$Region, df$Locality)
 df2 <- df[, c('regid', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible')] %>% group_by(regid) %>% summarize(Country=Country[1], Region=Region[1], Locality=Locality[1], population=mean(population), nobs=length(population), lowest_level=min(lowest_level), implausible=max(implausible))
 
 estimate.region <- function(subdfx, param, country, region) {
