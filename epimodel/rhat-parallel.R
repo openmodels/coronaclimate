@@ -9,7 +9,7 @@ for (filename in list.files(outdir)) {
             parts <- strsplit(filename, "\\.csv")[[1]]
             if (!(parts[1] %in% names(finals)))
                 finals[[parts[1]]] <- c()
-            finals[[parts[1]]] <- rbind(finals[[parts[1]]], df$rsqr)
+            finals[[parts[1]]] <- rbind(finals[[parts[1]]], df$rhat)
         }
     }, error=function(e) {
         print("Failed!")
