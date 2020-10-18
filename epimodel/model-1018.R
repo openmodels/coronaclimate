@@ -59,8 +59,8 @@ parameters {
   real<lower=0, upper=1> omega0; // initial observation rate
 
   // effect of weather
-  vector<lower=-1, upper=1>[K] effect;
-  vector<lower=-1, upper=1>[K] omegaeffect;
+  vector<lower=-.1, upper=.1>[K] effect;
+  vector<lower=-.1, upper=.1>[K] omegaeffect;
 
   // affine transform for mobility
   real<lower=0, upper=10> mobility_slope;
@@ -172,8 +172,8 @@ parameters {
   real<lower=0, upper=1> deathomegaplus; // additional rate of reported deaths
 
   // effect of weather
-  vector<lower=-1, upper=1>[K] effect;
-  vector<lower=-1, upper=1>[K] omegaeffect;
+  vector<lower=-.1, upper=.1>[K] effect;
+  vector<lower=-.1, upper=.1>[K] omegaeffect;
 
   // affine transform for mobility
   real<lower=0, upper=10> mobility_slope;
@@ -264,6 +264,8 @@ stan.compiled.nodice <- stan_model(model_code=stan.model.nodice)
 ##         mobdf <- rbind(mobdf, data.frame(cor=cor(subdf$mobility_pca1, subdf$residential_percent_change_from_baseline, use='complete'), sd=sd(subdf$mobility_pca1, na.rm=T)))
 ## }
 
+weatherscales <- apply(df[, weather], 2, sd)
+
 if (!do.multiproc) {
     if (!file.exists(outpath)) {
         results <- data.frame()
@@ -310,7 +312,7 @@ for (regid in unique(df$regid)) {
                       invsigma_prior=5.2, invgamma_prior=2.9,
                       invkappa_prior=7, invtheta_prior=7,
                       beta0_prior=2.5 * 2.9, dmobility_proxy=dmobility,
-                      weather=demeanlist(subdf[, weather], list(factor(rep('all', nrow(subdf))))),
+                      weather=demeanlist(subdf[, weather], list(factor(rep('all', nrow(subdf))))) / t(matrix(weatherscales, ncol=nrow(subdf), nrow=length(weather))),
                       ii_init=0, dobserved_true=diff(subdf$Confirmed) + 1)
 
     if (sum(!is.na(subdf$Deaths) & !is.na(subdf$Confirmed)) > 10) {
