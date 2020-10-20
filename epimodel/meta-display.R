@@ -5,18 +5,46 @@ library(ggplot2)
 library(scales)
 library(PBSmapping)
 
-outfile <- "../../results/epimodel-meta-0921-pop.csv"
+outfile <- "../../results/epimodel-meta-1018-pop.csv"
 allrecorded <- read.csv(outfile)
+
+paramorder <- c('alpha', 'invgamma', 'invsigma', 'invkappa', 'invtheta',
+                'mobility_slope', 'omega', 'portion_early',
+                'deathrate', 'deathomegaplus', 'error',
+                'logbeta', 'logomega', 'eein',
+                'e.absh', 'e.r', 'e.t2m', 'e.tp', 'e.ssrd', 'e.utci',
+                'o.absh', 'o.r', 'o.t2m', 'o.tp', 'o.ssrd', 'o.utci')
+labelmap <- list('mobility_slope'="Mobility Adjustment",
+                 'alpha'="Gradual Adjustment Rate",
+                 'invsigma'="Incubation Period (days)",
+                 'invgamma'="Infectious Period (days)",
+                 'invkappa'="Pre-Testing Period (days)",
+                 'invtheta'="Pre-Reporting Period (days)",
+                 'portion_early'="Portion Detected Early",
+                 'logbeta'="Log Transmission Rate",
+                 'omega'="Recording Rate",
+                 'deathrate'="Death Rate",
+                 'deathomegaplus'="Extra Record of Deaths",
+                 'portion_early'="Portion Reported Early",
+                 'e.t2m'="Air Temperature Trans.",
+                 'e.tp'="Total Precipitation Trans.",
+                 'e.r'="Relative Humidity Trans.",
+                 'e.absh'="Absolute Humidity Trans.",
+                 'e.ssrd'="Solar Radiation Trans.",
+                 'e.utci'="Thermal Discomfort Trans.",
+                 'o.t2m'="Air Temperature Detect",
+                 'o.tp'="Total Precipitation Detect",
+                 'o.r'="Relative Humidity Detect",
+                 'o.absh'="Absolute Humidity Detect",
+                 'o.ssrd'="Solar Radiation Detect",
+                 'o.utci'="Thermal Discomfort Detect",
+                 'error'="Model Error", 'logomega'="Log Reporting Rate",
+                 'eein'="Exposed Imports")
 
 ## Display raw results
 results <- subset(allrecorded, group == "Raw")
 
-results$param <- factor(results$param, c('alpha', 'invgamma', 'invsigma', 'mobility_slope',
-                                         'omega', 'portion_early',
-					 'deathrate', 'deathomegaplus', 'error',
-					 'logbeta', 'logomega', 'eein',
-                                         'e.absh', 'e.r', 'e.t2m', 'e.tp',
-					 'o.absh', 'o.r', 'o.t2m', 'o.tp'))
+results$param <- factor(results$param, paramorder)
 
 ## For plot, drop beyond the 99th
 results$showit <- T
@@ -26,25 +54,10 @@ for (param in unique(results$param)) {
 }
 
 results$paramlabel <- as.character(results$param)
-results$paramlabel[results$param == 'mobility_slope'] <- "Mobility Adjustment"
-results$paramlabel[results$param == 'alpha'] <- "Gradual Adjustment Rate"
-results$paramlabel[results$param == 'invsigma'] <- "Incubation Period (days)"
-results$paramlabel[results$param == 'invgamma'] <- "Infectious Period (days)"
-results$paramlabel[results$param == 'portion_early'] <- "Portion Detected Early"
-results$paramlabel[results$param == 'omega'] <- "Recording Rate"
-results$paramlabel[results$param == 'deathrate'] <- "Death Rate"
-results$paramlabel[results$param == 'deathomegaplus'] <- "Extra Record of Deaths"
-results$paramlabel[results$param == 'portion_early'] <- "Portion Reported Early"
-results$paramlabel[results$param == 'e.t2m'] <- "Air Temperature Trans."
-results$paramlabel[results$param == 'e.tp'] <- "Total Precipitation Trans."
-results$paramlabel[results$param == 'e.r'] <- "Relative Humidity Trans."
-results$paramlabel[results$param == 'e.absh'] <- "Absolute Humidity Trans."
-results$paramlabel[results$param == 'o.t2m'] <- "Air Temperature Detect"
-results$paramlabel[results$param == 'o.tp'] <- "Total Precipitation Detect"
-results$paramlabel[results$param == 'o.r'] <- "Relative Humidity Detect"
-results$paramlabel[results$param == 'o.absh'] <- "Absolute Humidity Detect"
+for (param in names(labelmap))
+    results$paramlabel[results$param == param] <- labelmap[[param]]
 
-results$paramlabel <- factor(results$paramlabel, levels=c("Gradual Adjustment Rate", "Mobility Adjustment", "Incubation Period (days)", "Infectious Period (days)", "Portion Detected Early", "Recording Rate", "Death Rate", "Extra Record of Deaths", "Portion Reported Early", "Air Temperature Trans.", "Total Precipitation Trans.", "Relative Humidity Trans.", "Absolute Humidity Trans.", "Air Temperature Detect", "Total Precipitation Detect", "Relative Humidity Detect", "Absolute Humidity Detect"))
+results$paramlabel <- factor(results$paramlabel, levels=sapply(paramorder, function(param) labelmap[[param]]))
 
 ggplot(subset(results, param != 'error' & showit), aes(mu)) +
     facet_wrap(~ paramlabel, scales='free') +
@@ -80,31 +93,15 @@ for (pp in unique(allrecorded$param)) {
 }
 
 allrecorded$paramlabel <- as.character(allrecorded$param)
-allrecorded$paramlabel[allrecorded$param == 'mobility_slope'] <- "Mobility Adjustment"
-allrecorded$paramlabel[allrecorded$param == 'alpha'] <- "Gradual Adjustment Rate"
-allrecorded$paramlabel[allrecorded$param == 'invsigma'] <- "Incubation Period (days)"
-allrecorded$paramlabel[allrecorded$param == 'invgamma'] <- "Infectious Period (days)"
-allrecorded$paramlabel[allrecorded$param == 'portion_early'] <- "Portion Detected Early"
-allrecorded$paramlabel[allrecorded$param == 'omega'] <- "Recording Rate"
-allrecorded$paramlabel[allrecorded$param == 'deathrate'] <- "Death Rate"
-allrecorded$paramlabel[allrecorded$param == 'deathomegaplus'] <- "Extra Record of Deaths"
-allrecorded$paramlabel[allrecorded$param == 'portion_early'] <- "Portion Reported Early"
-allrecorded$paramlabel[allrecorded$param == 'mobility_slope'] <- "Mobility Transmission Effect"
-allrecorded$paramlabel[allrecorded$param == 'e.t2m'] <- "Air Temperature Trans."
-allrecorded$paramlabel[allrecorded$param == 'e.tp'] <- "Total Precipitation Trans."
-allrecorded$paramlabel[allrecorded$param == 'e.r'] <- "Relative Humidity Trans."
-allrecorded$paramlabel[allrecorded$param == 'e.absh'] <- "Absolute Humidity Trans."
-allrecorded$paramlabel[allrecorded$param == 'o.t2m'] <- "Air Temperature Detect"
-allrecorded$paramlabel[allrecorded$param == 'o.tp'] <- "Total Precipitation Detect"
-allrecorded$paramlabel[allrecorded$param == 'o.r'] <- "Relative Humidity Detect"
-allrecorded$paramlabel[allrecorded$param == 'o.absh'] <- "Absolute Humidity Detect"
+for (param in names(labelmap))
+    allrecorded$paramlabel[allrecorded$param == param] <- labelmap[[param]]
 
-allrecorded$paramlabel <- factor(allrecorded$paramlabel, levels=rev(c("Gradual Adjustment Rate", "Mobility Adjustment", "Incubation Period (days)", "Infectious Period (days)", "Portion Detected Early", "Recording Rate", "Death Rate", "Extra Record of Deaths", "Portion Reported Early", "Mobility Transmission Effect", "Air Temperature Trans.", "Total Precipitation Trans.", "Relative Humidity Trans.", "Absolute Humidity Trans.", "Air Temperature Detect", "Total Precipitation Detect", "Relative Humidity Detect", "Absolute Humidity Detect")))
+allrecorded$paramlabel <- factor(allrecorded$paramlabel, levels=rev(sapply(paramorder, function(param) labelmap[[param]])))
 
 allrecorded$paramgroup <- "Drop"
-allrecorded$paramgroup[allrecorded$param %in% c('invsigma', 'invkappa', 'invgamma')] <- "Period Lengths"
-allrecorded$paramgroup[allrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh')] <- "Weather on Transmission"
-allrecorded$paramgroup[allrecorded$param %in% c('o.t2m', 'o.tp', 'o.r', 'o.absh')] <- "Weather on Detection"
+allrecorded$paramgroup[allrecorded$param %in% c('invsigma', 'invkappa', 'invgamma', 'invtheta')] <- "Period Lengths"
+allrecorded$paramgroup[allrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh', 'e.ssrd', 'e.utci')] <- "Weather on Transmission"
+allrecorded$paramgroup[allrecorded$param %in% c('o.t2m', 'o.tp', 'o.r', 'o.absh', 'o.ssrd', 'o.utci')] <- "Weather on Detection"
 allrecorded$paramgroup[allrecorded$param %in% c('portion_early', 'omega', 'deathrate', 'deathomegaplus')] <- "Proportional Response"
 allrecorded$paramgroup[allrecorded$param %in% c('mobility_slope', 'alpha')] <- "Behavioural Response"
 
