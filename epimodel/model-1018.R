@@ -7,6 +7,11 @@ outpath <- "../../results/epimodel-1018.csv"
 weather <- c('absh', 'r', 't2m', 'tp', 'ssrd', 'utci')
 regfilter <- function(rows) T
 do.multiproc <- T
+do.mobileonly <- T
+
+if (do.mobileonly) {
+    outpath <- gsub(".csv", "-mobile.csv", outpath)
+}
 
 df <- read.csv(casespath)
 df$regid <- paste(df$Country, df$Region, df$Locality)
@@ -294,6 +299,13 @@ for (regid in unique(df$regid)) {
         fileConn <- file(regfile)
         writeLines(as.character(Sys.getpid()), fileConn)
         close(fileConn)
+    }
+
+    if (do.mobileonly) {
+        ## Count mobility data portion
+        portion <- mean(!is.na(subdf$mobility_pca1[subdf$Date > "2020-02-28"]))
+        if (portion < .5)
+            next
     }
 
     print(regid)
