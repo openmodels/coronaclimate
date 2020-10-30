@@ -125,8 +125,7 @@ ggplot(subset(allrecorded, Country == "" & paramgroup != "Drop"), aes(paramlabel
 ## Prepare to map
 
 ## Grab ALPHA.3 from df
-## load("../../cases/panel-prepped_MLI.RData")
-load("~/Downloads/panel-prepped_MLI.RData")
+df <- read.csv("../../cases/panel_all.csv")
 df2 <- df[, c('Country', 'ALPHA.3')] %>% group_by(Country) %>% summarize(ALPHA.3=ALPHA.3[1])
 allrecorded2 <- subset(allrecorded, Region == "" & Locality == "" & group == "Combined") %>% left_join(df2)
 
