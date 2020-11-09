@@ -8,10 +8,10 @@ casespath <- "../../cases/panel_all.csv"
 weather <- c('absh', 't2m', 'tp', 'ssrd', 'utci')
 regfilter <- function(rows) T
 do.multiproc <- T
+mobileonly <- F # Subset it when doing meta analysis
 
-for (mobileonly in c(F, T)) {
-    outpath <- paste0("../../results/epimodel-", version, ifelse(mobileonly, "-mobile", "-all"), ".csv")
+outpath <- paste0("../../results/epimodel-", version, ifelse(mobileonly, "-mobile", ""), ".csv")
 
-    source(paste0("modellib-", version))
-}
+source(paste0("modellib-", version, ".R"))
+
 

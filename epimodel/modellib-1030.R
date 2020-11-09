@@ -42,10 +42,10 @@ parameters {
   // parameters
   real<lower=0> alpha; // variation in beta
   real<lower=0> beta0;
-  real<lower=2> invsigma; // below 2 and daily step doesn't work
-  real<lower=2> invgamma; // below 2 and daily step doesn't work
-  real<lower=1> invkappa; // below 1 and daily step doesn't work
-  real<lower=1> invtheta; // below 1 and daily step doesn't work
+  real<lower=2, upper=17> invsigma; // below 2 and daily step doesn't work
+  real<lower=2, upper=17> invgamma; // below 2 and daily step doesn't work
+  real<lower=1, upper=17> invkappa; // below 1 and daily step doesn't work
+  real<lower=1, upper=17> invtheta; // below 1 and daily step doesn't work
   real<lower=0, upper=1> omega0; // initial observation rate
 
   // effect of weather
@@ -152,10 +152,10 @@ parameters {
   // parameters
   real<lower=0> alpha; // variation in beta
   real<lower=0> beta0;
-  real<lower=2> invsigma; // below 2 and daily step doesn't work
-  real<lower=2> invgamma; // below 2 and daily step doesn't work
-  real<lower=1> invkappa; // below 1 and daily step doesn't work
-  real<lower=1> invtheta; // below 1 and daily step doesn't work
+  real<lower=2, upper=17> invsigma; // below 2 and daily step doesn't work
+  real<lower=2, upper=17> invgamma; // below 2 and daily step doesn't work
+  real<lower=1, upper=17> invkappa; // below 1 and daily step doesn't work
+  real<lower=1, upper=17> invtheta; // below 1 and daily step doesn't work
   real<lower=0, upper=1> omega0; // initial observation rate
 
   real<lower=0, upper=.1> deathrate; // rate of death
@@ -286,9 +286,9 @@ for (regid in unique(df$regid)) {
         close(fileConn)
     }
 
-    if (do.mobileonly) {
+    if (mobileonly) {
         ## Count mobility data portion
-        portion <- mean(!is.na(subdf$mobility_pca1[subdf$Date > "2020-02-28"]))
+        portion <- mean(!is.na(subdf$mobility_pca1[as.Date(subdf$Date) > "2020-02-28"]))
         if (portion < .5)
             next
     }
@@ -306,9 +306,9 @@ for (regid in unique(df$regid)) {
 
     stan.data <- list(T=nrow(subdf), N=round(subdf$population[1]), K=length(weather),
                       alpha_prior=.395 / 100, eein_prior=1,
-                      invsigma_prior=4.6, invgamma_prior=6.75,
+                      invsigma_prior=5.2, invgamma_prior=2.9,
                       invkappa_prior=7, invtheta_prior=7,
-                      beta0_prior=2.5 * 6.75, dmobility_proxy=dmobility,
+                      beta0_prior=2.5 * 2.9, dmobility_proxy=dmobility,
                       weather=demeanlist(subdf[, weather], list(factor(rep('all', nrow(subdf))))) / t(matrix(weatherscales, ncol=nrow(subdf), nrow=length(weather))),
                       ii_init=0, dobserved_true=diff(subdf$Confirmed) + 1)
 

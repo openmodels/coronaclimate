@@ -9,7 +9,7 @@ for (filename in list.files(outdir)) {
             parts <- strsplit(filename, "\\.csv")[[1]]
             if (!(parts[1] %in% names(finals)))
                 finals[[parts[1]]] <- c()
-            finals[[parts[1]]] <- rbind(finals[[parts[1]]], df$rhat)
+            finals[[parts[1]]] <- c(finals[[parts[1]]], df$rhat)
         }
     }, error=function(e) {
         print("Failed!")
@@ -17,6 +17,6 @@ for (filename in list.files(outdir)) {
 }
 
 for (filebase in names(finals)) {
-    print(filename)
-    print(quantile(finals[[filename]]))
+    print(filebase)
+    print(quantile(finals[[filebase]], na.rm=T))
 }

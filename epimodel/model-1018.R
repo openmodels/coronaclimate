@@ -290,6 +290,14 @@ for (regid in unique(df$regid)) {
     if (!regfilter(subdf))
         next
 
+    if (do.mobileonly) {
+        ## Count mobility data portion
+        portion <- mean(!is.na(subdf$mobility_pca1[which(subdf$Date == "2020-02-28"):nrow(subdf)]))
+	print(paste("Mobility portion:", portion))
+        if (portion < .5)
+            next
+    }
+
     if (do.multiproc) {
         ## Check if region is claimed
         regfile <- paste0(outpath, "-", regid)
@@ -299,13 +307,6 @@ for (regid in unique(df$regid)) {
         fileConn <- file(regfile)
         writeLines(as.character(Sys.getpid()), fileConn)
         close(fileConn)
-    }
-
-    if (do.mobileonly) {
-        ## Count mobility data portion
-        portion <- mean(!is.na(subdf$mobility_pca1[subdf$Date > "2020-02-28"]))
-        if (portion < .5)
-            next
     }
 
     print(regid)

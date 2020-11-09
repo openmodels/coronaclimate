@@ -1,11 +1,3 @@
-## setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
-
-library(dplyr)
-library(ggplot2)
-library(rstan)
-options(mc.cores = parallel::detectCores())
-rstan_options(auto_write = TRUE)
-
 wt.mean <- function(x,wt) {
 	s = which(is.finite(x*wt)); wt = wt[s]; x = x[s] #remove NA info
 	return( sum(wt * x)/sum(wt) ) #return the mean
@@ -20,11 +12,6 @@ wt.var <- function(x,wt) {
 wt.sd <- function(x,wt) {
 	return( sqrt(wt.var(x,wt)) ) #return the standard deviation
 }
-
-weight <- 'pop' #'region' #'nobs'
-
-results <- read.csv("../../results/epimodel-1018-mobile-combo.csv")
-outfile <- paste0("../../results/epimodel-meta-1018-mobile-", weight, ".csv")
 
 ## Geospatial meta-analysis
 
@@ -64,10 +51,6 @@ model {
 "
 
 stan.model0.compiled <- stan_model(model_code=stan.model0)
-
-df <- read.csv("../../cases/panel_all.csv")
-df$regid <- paste(df$Country, df$Region, df$Locality)
-df2 <- df[, c('regid', 'Country', 'Region', 'Locality', 'population', 'lowest_level', 'implausible')] %>% group_by(regid) %>% summarize(Country=Country[1], Region=Region[1], Locality=Locality[1], population=mean(population), nobs=length(population), lowest_level=min(lowest_level), implausible=max(implausible))
 
 estimate.region <- function(subdfx, param, country, region) {
     if (nrow(subdfx) > 100) {

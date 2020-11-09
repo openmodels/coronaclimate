@@ -1,9 +1,9 @@
-setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
+## setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
 
-df <- read.csv('../../results/epimodel-0907.csv')
+df <- read.csv('../../results/epimodel-1018-mobile.csv')
 
 combine <- function(subdf) {
-    if (mrow(subdf) <= 1)
+    if (nrow(subdf) <= 1)
         return(subdf)
 
     mu <- mean(subdf$mu)
@@ -27,4 +27,4 @@ for (param in unique(df$param)) {
     }
 }
 
-write.csv(results, '../../results/epimodel-0907-combo.csv', row.names=F)
+write.csv(results, '../../results/epimodel-1018-mobile-combo.csv', row.names=F)
