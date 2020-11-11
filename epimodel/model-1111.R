@@ -2,7 +2,7 @@
 
 source("../configs.R")
 
-version <- "1111"
+version <- "1112"
 
 casespath <- "../../cases/panel_all.csv"
 weather <- c('absh', 't2m', 'tp', 'ssrd', 'utci')
@@ -69,6 +69,7 @@ parameters {
   // effect of weather
   vector<lower=-.1, upper=.1>[K] effect;
   vector<lower=-.1, upper=.1>[K] omegaeffect;
+  vector<lower=-.1, upper=.1>[K] doweffect;
 
   // affine transform for mobility
   real<lower=0, upper=10> mobility_slope;
@@ -110,7 +111,7 @@ transformed parameters {
   qq[1] = ii_init;
   rr[1] = ii_init;
   for (tt in 2:T) {
-    new_ee1[tt-1] = exp(logbeta[tt-1] + dot_product(weather[tt-1], effect))*ss[tt-1]*(ii1[tt-1] + ii2[tt-1]) / N;
+    new_ee1[tt-1] = exp(logbeta[tt-1] + doweffect[1 + (tt % 7)] + dot_product(weather[tt-1], effect))*ss[tt-1]*(ii1[tt-1] + ii2[tt-1]) / N;
     ss[tt] = ss[tt-1] - new_ee1[tt-1];
     ee1[tt] = ee1[tt-1] + new_ee1[tt-1] - 2*ee1[tt-1]/invsigma + eein[tt-1];
     ee2[tt] = ee2[tt-1] + 2*ee1[tt-1]/invsigma - 2*ee2[tt-1]/invsigma;
@@ -119,7 +120,7 @@ transformed parameters {
 
     qq[tt] = qq[tt-1] + new_ee1[tt-1] - qq[tt-1]/invkappa;
 
-    omega[tt-1] = (exp(logomega[tt-1]) / (1 + exp(logomega[tt-1]))) * exp(dot_product(weather[tt-1], omegaeffect));
+    omega[tt-1] = (exp(logomega[tt-1]) / (1 + exp(logomega[tt-1]))) * exp(doweffect[1 + (tt % 7)] + dot_product(weather[tt-1], omegaeffect));
     rr[tt] = rr[tt-1] + omega[tt-1] * qq[tt-1]/invkappa - rr[tt-1]/invtheta;
 
     dcc[tt-1] = omega[tt-1] * rr[tt-1]/invtheta;
@@ -187,6 +188,7 @@ parameters {
   // effect of weather
   vector<lower=-.1, upper=.1>[K] effect;
   vector<lower=-.1, upper=.1>[K] omegaeffect;
+  vector<lower=-.1, upper=.1>[K] doweffect;
 
   // affine transform for mobility
   real<lower=0, upper=10> mobility_slope;
@@ -229,7 +231,7 @@ transformed parameters {
   qq[1] = ii_init;
   rr[1] = ii_init;
   for (tt in 2:T) {
-    new_ee1[tt-1] = exp(logbeta[tt-1] + dot_product(weather[tt-1], effect))*ss[tt-1]*(ii1[tt-1] + ii2[tt-1]) / N;
+    new_ee1[tt-1] = exp(logbeta[tt-1] + doweffect[1 + (tt % 7)] + dot_product(weather[tt-1], effect))*ss[tt-1]*(ii1[tt-1] + ii2[tt-1]) / N;
     ss[tt] = ss[tt-1] - new_ee1[tt-1];
     ee1[tt] = ee1[tt-1] + new_ee1[tt-1] - 2*ee1[tt-1]/invsigma + eein[tt-1];
     ee2[tt] = ee2[tt-1] + 2*ee1[tt-1]/invsigma - 2*ee2[tt-1]/invsigma;
@@ -238,7 +240,7 @@ transformed parameters {
 
     qq[tt] = qq[tt-1] + new_ee1[tt-1] - qq[tt-1]/invkappa;
 
-    omega[tt-1] = (exp(logomega[tt-1]) / (1 + exp(logomega[tt-1]))) * exp(dot_product(weather[tt-1], omegaeffect));
+    omega[tt-1] = (exp(logomega[tt-1]) / (1 + exp(logomega[tt-1]))) * exp(doweffect[1 + (tt % 7)] + dot_product(weather[tt-1], omegaeffect));
     rr[tt] = rr[tt-1] + omega[tt-1] * qq[tt-1]/invkappa - rr[tt-1]/invtheta;
 
     dcc[tt-1] = omega[tt-1] * rr[tt-1]/invtheta;

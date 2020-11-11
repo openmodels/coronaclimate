@@ -103,10 +103,11 @@ allrecorded$paramlabel <- factor(allrecorded$paramlabel, levels=rev(sapply(param
 
 allrecorded$paramgroup <- "Drop"
 allrecorded$paramgroup[allrecorded$param %in% c('invsigma', 'invkappa', 'invgamma', 'invtheta')] <- "Period Lengths"
-allrecorded$paramgroup[allrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh', 'e.ssrd', 'e.utci')] <- "Weather on Transmission"
-allrecorded$paramgroup[allrecorded$param %in% c('o.t2m', 'o.tp', 'o.r', 'o.absh', 'o.ssrd', 'o.utci')] <- "Weather on Detection"
+allrecorded$paramgroup[allrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh', 'e.ssrd', 'e.utci')] <- "Weather on Log Transmission"
+allrecorded$paramgroup[allrecorded$param %in% c('o.t2m', 'o.tp', 'o.r', 'o.absh', 'o.ssrd', 'o.utci')] <- "Weather on Log Detection"
 allrecorded$paramgroup[allrecorded$param %in% c('portion_early', 'omega', 'deathrate', 'deathomegaplus')] <- "Proportional Response"
 allrecorded$paramgroup[allrecorded$param %in% c('mobility_slope', 'alpha')] <- "Behavioural Response"
+allrecorded$paramgroup[allrecorded$param %in% c('logbeta', 'logomega')] <- "Baseline Log Rates"
 
 for (paramgroup in unique(allrecorded$paramgroup)) {
     botlev <- quantile(allrecorded$mu[allrecorded$paramgroup == paramgroup], .01, na.rm=T)
@@ -128,10 +129,11 @@ mobrecorded$paramlabel <- factor(mobrecorded$paramlabel, levels=rev(sapply(param
 
 mobrecorded$paramgroup <- "Drop"
 mobrecorded$paramgroup[mobrecorded$param %in% c('invsigma', 'invkappa', 'invgamma', 'invtheta')] <- "Period Lengths"
-mobrecorded$paramgroup[mobrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh', 'e.ssrd', 'e.utci')] <- "Weather on Transmission"
-mobrecorded$paramgroup[mobrecorded$param %in% c('o.t2m', 'o.tp', 'o.r', 'o.absh', 'o.ssrd', 'o.utci')] <- "Weather on Detection"
+mobrecorded$paramgroup[mobrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh', 'e.ssrd', 'e.utci')] <- "Weather on Log Transmission"
+mobrecorded$paramgroup[mobrecorded$param %in% c('o.t2m', 'o.tp', 'o.r', 'o.absh', 'o.ssrd', 'o.utci')] <- "Weather on Log Detection"
 mobrecorded$paramgroup[mobrecorded$param %in% c('portion_early', 'omega', 'deathrate', 'deathomegaplus')] <- "Proportional Response"
 mobrecorded$paramgroup[mobrecorded$param %in% c('mobility_slope', 'alpha')] <- "Behavioural Response"
+mobrecorded$paramgroup[mobrecorded$param %in% c('logbeta', 'logomega')] <- "Baseline Log Rates"
 
 for (paramgroup in unique(mobrecorded$paramgroup)) {
     botlev <- quantile(mobrecorded$mu[mobrecorded$paramgroup == paramgroup], .01, na.rm=T)
@@ -144,6 +146,9 @@ mobrecorded$paramgroup[grep("-\\d", mobrecorded$Country)] <- "Drop"
 
 global.mobrecorded <- subset(mobrecorded, Country == "" & paramgroup != "Drop")
 
+allrecorded$paramgroup <- factor(allrecorded$paramgroup, c("Period Lengths", "Proportional Response", "Behavioural Response", "Baseline Log Rates", "Weather on Log Transmission", "Weather on Log Detection"))
+global.mobrecorded$paramgroup <- factor(global.mobrecorded$paramgroup, c("Period Lengths", "Proportional Response", "Behavioural Response", "Baseline Log Rates", "Weather on Log Transmission", "Weather on Log Detection"))
+
 ggplot(subset(allrecorded, Country == "" & paramgroup != "Drop"), aes(paramlabel, mu)) +
     facet_wrap(~ paramgroup, ncol=1, scales="free") +
     coord_flip() +
@@ -152,7 +157,19 @@ ggplot(subset(allrecorded, Country == "" & paramgroup != "Drop"), aes(paramlabel
         geom_point(data=global.mobrecorded, aes(colour='Mobility only')) + geom_errorbar(data=global.mobrecorded, aes(ymin=ci2.5, ymax=ci97.5, colour='Mobility only')) +
         geom_point(aes(colour='All observations')) + geom_errorbar(aes(ymin=ci2.5, ymax=ci97.5, colour='All observations')) +
         scale_colour_discrete(name=NULL) +
-    theme_bw() + ylab("Hyper-paramater value and 95% CI") + xlab(NULL)
+        theme_bw() + ylab("Hyper-paramater value and 95% CI") + xlab(NULL)
+
+## Combined weather effect
+sqrt(sum(subset(allrecorded, Country == "" & paramgroup != "Drop" & param %in% c('e.absh', 'e.r', 'e.t2m', 'e.tp', 'e.ssrd', 'e.utci'))$mu^2))
+sqrt(sum(subset(mobrecorded, Country == "" & paramgroup != "Drop" & param %in% c('e.absh', 'e.r', 'e.t2m', 'e.tp', 'e.ssrd', 'e.utci'))$mu^2))
+
+
+## Look at variance across regions
+
+sumtbl <- subset(allrecorded, Country != "" & group == "Combined" & Region == "" & paramgroup != "Drop") %>% group_by(paramlabel) %>% summarize(mean.mu=mean(mu), sd.mu=sd(mu), mu.sd=mean(sd), ci.25=quantile(mu, .25), ci.75=quantile(mu, .75)) %>% left_join(subset(allrecorded, Country == "" & paramgroup != "Drop")[, c('paramlabel', 'mu')]) %>% left_join(subset(mobrecorded, Country == "" & paramgroup != "Drop")[, c('paramlabel', 'mu')], by='paramlabel')
+sumtbl$sd.ratio <- sumtbl$sd.mu / sumtbl$mu.sd
+print(xtable(sumtbl[nrow(sumtbl):1, c(1:2, 5:6, 9, 7:8)], digits=3), include.rownames=F)
+
 
 ## Prepare to map
 
@@ -188,7 +205,9 @@ gp <- ggplot(shp2, aes(X, Y, fill=sssmu, group=paste(PID, SID))) +
     scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name="Weather effect")
 ggsave(paste0("../../figures/epimodel-weather-sss.png"), width=8, height=3)
 
-df.var <- subset(df, Region == "" & Locality == "") %>% group_by(Country) %>% summarize(var.absh=var(absh), var.ssrd=var(ssrd), var.t2m=var(t2m), var.tp=var(tp), var.utci=var(utci))
+weatherscales <- apply(df[, weather], 2, sd)
+
+df.var <- subset(df, Region == "" & Locality == "") %>% group_by(Country) %>% summarize(var.absh=var(absh / weatherscales[1]), var.ssrd=var(ssrd / weatherscales[2]), var.t2m=var(t2m / weatherscales[3]), var.tp=var(tp / weatherscales[3]), var.utci=var(utci / weatherscales[1]))
 
 allsss2 <- allsqssq %>% left_join(df.var)
 allsss2$totsss <- sqrt((allsss2$e.absh^2 + allsss2$o.absh^2) * allsss2$var.absh + (allsss2$e.t2m^2 + allsss2$o.t2m^2) * allsss2$var.t2m + (allsss2$e.tp^2 + allsss2$o.tp^2) * allsss2$var.tp + (allsss2$e.ssrd^2 + allsss2$o.ssrd^2) * allsss2$var.ssrd + (allsss2$e.utci^2 + allsss2$o.utci^2) * allsss2$var.utci)
