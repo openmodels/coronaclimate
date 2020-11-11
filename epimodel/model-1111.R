@@ -7,7 +7,7 @@ version <- "1111"
 casespath <- "../../cases/panel_all.csv"
 weather <- c('absh', 't2m', 'tp', 'ssrd', 'utci')
 ols.priors.mu <- c(0.03344, -0.04791, -0.00190, -0.00332, -0.00684)
-ols.priors.se <- c(0.01493, 0.01812, 0.00135, 0.00423, 0.00632)
+ols.priors.se <- 5 * c(0.01493, 0.01812, 0.00135, 0.00423, 0.00632)
 regfilter <- function(rows) T
 do.multiproc <- T
 
@@ -311,13 +311,6 @@ for (regid in unique(df$regid)) {
         close(fileConn)
     }
 
-    if (mobileonly) {
-        ## Count mobility data portion
-        portion <- mean(!is.na(subdf$mobility_pca1[as.Date(subdf$Date) > "2020-02-28"]))
-        if (portion < .5)
-            next
-    }
-
     print(regid)
 
     subdf$Confirmed[is.na(subdf$Confirmed)] <- 0
@@ -335,7 +328,7 @@ for (regid in unique(df$regid)) {
                       invkappa_prior=7, invtheta_prior=7,
                       beta0_prior=2.5 * 2.9, dmobility_proxy=dmobility,
                       weather=demeanlist(subdf[, weather], list(factor(rep('all', nrow(subdf))))) / t(matrix(weatherscales, ncol=nrow(subdf), nrow=length(weather))),
-                      total_prior=e.priors.mu, total_prior_sd=e.priors.se * sqrt(nrow(df)) / sqrt(nrow(subdf)),
+                      total_prior=ols.priors.mu, total_prior_sd=ols.priors.se,
                       ii_init=0, dobserved_true=diff(subdf$Confirmed) + 1)
 
     if (sum(!is.na(subdf$Deaths) & !is.na(subdf$Confirmed)) > 10) {
