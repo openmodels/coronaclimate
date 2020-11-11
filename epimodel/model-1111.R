@@ -1,3 +1,18 @@
+## setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
+
+source("../configs.R")
+
+version <- "1111"
+
+casespath <- "../../cases/panel_all.csv"
+weather <- c('absh', 't2m', 'tp', 'ssrd', 'utci')
+ols.priors.mu <- c(0.03344, -0.04791, -0.00190, -0.00332, -0.00684)
+ols.priors.se <- c(0.01493, 0.01812, 0.00135, 0.00423, 0.00632)
+regfilter <- function(rows) T
+do.multiproc <- T
+
+outpath <- paste0("../../results/epimodel-", version, ".csv")
+
 df <- read.csv(casespath)
 df$regid <- paste(df$Country, df$Region, df$Locality)
 
@@ -31,6 +46,9 @@ data {
   real invtheta_prior; // testing to reported
   real beta0_prior;
   real eein_prior;
+
+  vector[K] total_prior;
+  vector<lower=0>[K] total_prior_sd;
 
   matrix[T, K] weather;
   vector[T-1] dmobility_proxy;
@@ -101,7 +119,7 @@ transformed parameters {
 
     qq[tt] = qq[tt-1] + new_ee1[tt-1] - qq[tt-1]/invkappa;
 
-    omega[tt-1] = exp(logomega[tt-1]) / (1 + exp(logomega[tt-1])) + dot_product(weather[tt-1], omegaeffect);
+    omega[tt-1] = (exp(logomega[tt-1]) / (1 + exp(logomega[tt-1]))) * exp(dot_product(weather[tt-1], omegaeffect));
     rr[tt] = rr[tt-1] + omega[tt-1] * qq[tt-1]/invkappa - rr[tt-1]/invtheta;
 
     dcc[tt-1] = omega[tt-1] * rr[tt-1]/invtheta;
@@ -115,6 +133,8 @@ model {
   invkappa ~ normal(invkappa_prior, invkappa_prior);
   invtheta ~ normal(invtheta_prior, invtheta_prior);
   beta0 ~ normal(beta0_prior, 1);
+
+  total_prior ~ normal(effect + omegaeffect, total_prior_sd);
 
   // hyperparameters
   eein ~ exponential(1 / eein_prior);
@@ -140,6 +160,9 @@ data {
   real invtheta_prior; // testing to reported
   real beta0_prior;
   real eein_prior;
+
+  vector[K] total_prior;
+  vector<lower=0>[K] total_prior_sd;
 
   matrix[T, K] weather;
   vector[T-1] dmobility_proxy;
@@ -215,7 +238,7 @@ transformed parameters {
 
     qq[tt] = qq[tt-1] + new_ee1[tt-1] - qq[tt-1]/invkappa;
 
-    omega[tt-1] = exp(logomega[tt-1]) / (1 + exp(logomega[tt-1])) + dot_product(weather[tt-1], omegaeffect);
+    omega[tt-1] = (exp(logomega[tt-1]) / (1 + exp(logomega[tt-1]))) * exp(dot_product(weather[tt-1], omegaeffect));
     rr[tt] = rr[tt-1] + omega[tt-1] * qq[tt-1]/invkappa - rr[tt-1]/invtheta;
 
     dcc[tt-1] = omega[tt-1] * rr[tt-1]/invtheta;
@@ -230,6 +253,8 @@ model {
   invkappa ~ normal(invkappa_prior, invkappa_prior);
   invtheta ~ normal(invtheta_prior, invtheta_prior);
   beta0 ~ normal(beta0_prior, 1);
+
+  total_prior ~ normal(effect + omegaeffect, total_prior_sd);
 
   // hyperparameters
   eein ~ exponential(1 / eein_prior);
@@ -310,6 +335,7 @@ for (regid in unique(df$regid)) {
                       invkappa_prior=7, invtheta_prior=7,
                       beta0_prior=2.5 * 2.9, dmobility_proxy=dmobility,
                       weather=demeanlist(subdf[, weather], list(factor(rep('all', nrow(subdf))))) / t(matrix(weatherscales, ncol=nrow(subdf), nrow=length(weather))),
+                      total_prior=e.priors.mu, total_prior_sd=e.priors.se * sqrt(nrow(df)) / sqrt(nrow(subdf)),
                       ii_init=0, dobserved_true=diff(subdf$Confirmed) + 1)
 
     if (sum(!is.na(subdf$Deaths) & !is.na(subdf$Confirmed)) > 10) {
