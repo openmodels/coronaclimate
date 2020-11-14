@@ -1,5 +1,5 @@
 outdir <- "../../results"
-basename <- "epimodel-1030-all.csv"
+basename <- "epimodel-1112.csv"
 
 allparams <- c()
 allmus <- c()

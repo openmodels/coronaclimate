@@ -1,6 +1,7 @@
 ## setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
 
-df <- read.csv('../../results/epimodel-1018-mobile.csv')
+filepath <- '../../results-mixed/epimodel-1111-mixed.csv'
+df <- read.csv(filepath)
 
 combine <- function(subdf) {
     if (nrow(subdf) <= 1)
@@ -27,4 +28,4 @@ for (param in unique(df$param)) {
     }
 }
 
-write.csv(results, '../../results/epimodel-1018-mobile-combo.csv', row.names=F)
+write.csv(results, gsub('\\.csv', '-combo.csv', filepath), row.names=F)

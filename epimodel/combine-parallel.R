@@ -1,4 +1,4 @@
-outdir <- "../../results"
+outdir <- "../../results-mixed"
 
 finals <- list()
 
