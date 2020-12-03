@@ -4,6 +4,7 @@ filepath <- '../../results-mixed/epimodel-1111-mixed.csv'
 df <- read.csv(filepath)
 
 combine <- function(subdf) {
+    subdf <- subdf[!duplicated(subdf),]
     if (nrow(subdf) <= 1)
         return(subdf)
 

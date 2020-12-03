@@ -18,7 +18,7 @@ df2 <- df[, c('regid', 'Country', 'Region', 'Locality', 'population', 'lowest_le
 df2.mobile <- df %>% group_by(regid) %>% summarize(portion=mean(!is.na(mobility_pca1[as.Date(Date) > "2020-02-28"])))
 
 for (weight in c('pop', 'region', 'nobs')) {
-    for (mobileonly in c(F, T)) {
+    for (mobileonly in c(T, F)) {
         results <- read.csv(paste0("../../", resultdir, "/epimodel-", in.version, ".csv"))
 	if (mobileonly)
             results <- subset(results, regid %in% df2.mobile$regid[df2.mobile$portion > .5])
@@ -26,7 +26,7 @@ for (weight in c('pop', 'region', 'nobs')) {
         subsuffix <- ifelse(mobileonly, "-mobile", "-all")
         outfile <- paste0("../../", resultdir, "/epimodel-meta-", out.version, subsuffix, "-", weight, ".csv")
 
-        source(paste0("meta-modellib-", version, ".R"))
+        source(paste0("meta-modellib-", code.version, ".R"))
     }
 }
 
