@@ -4,7 +4,12 @@ weather <- c('absh', 'ssrd', 't2m', 'tp', 'utci')
 e.ols.mu <- c(0.03344, -0.00332, -0.04791, -0.00190, -0.00684)
 e.ols.se <- c(0.01493, 0.00423, 0.01812, 0.00135, 0.00632)
 
-df <- read.csv('../../results/epimodel-meta-1030-mobile-pop.csv')
+alltbls <- list()
+allgdfs <- list()
+
+for (filepath in c('../../results/epimodel-meta-1030-all-pop.csv', '../../results/epimodel-meta-1030-mobile-pop.csv', '../../results/epimodel-meta-1111-mixed-all-pop.csv', '../../results/epimodel-meta-1111-mixed-mobile-pop.csv')) {
+
+df <- read.csv(filepath)
 subdf <- subset(df, Country == "" & Region == "")
 
 e.epi.mu <- c(subdf$mu[subdf$param == 'e.absh'], subdf$mu[subdf$param == 'e.ssrd'], subdf$mu[subdf$param == 'e.t2m'], subdf$mu[subdf$param == 'e.tp'], subdf$mu[subdf$param == 'e.utci'])
@@ -13,12 +18,14 @@ e.epi.sd <- c(subdf$sd[subdf$param == 'e.absh'], subdf$sd[subdf$param == 'e.ssrd
 o.epi.mu <- c(subdf$mu[subdf$param == 'o.absh'], subdf$mu[subdf$param == 'o.ssrd'], subdf$mu[subdf$param == 'o.t2m'], subdf$mu[subdf$param == 'o.tp'], subdf$mu[subdf$param == 'o.utci'])
 o.epi.sd <- c(subdf$sd[subdf$param == 'o.absh'], subdf$sd[subdf$param == 'o.ssrd'], subdf$sd[subdf$param == 'o.t2m'], subdf$sd[subdf$param == 'o.tp'], subdf$sd[subdf$param == 'o.utci'])
 
+allgdfs[[filepath]] <- data.frame(weather=rep(weather, 2), mu=c(e.epi.mu, o.epi.mu), sd=c(e.epi.sd, o.epi.sd), channel=rep(c('Transmission', 'Detection'), each=length(weather)))
+
 subdf2 <- subset(df, Country != "" & Region == "" & group == "Raw")
 e.epi.mu2 <- c(mean(subdf2$mu[subdf2$param == 'e.absh']), mean(subdf2$mu[subdf2$param == 'e.ssrd']), mean(subdf2$mu[subdf2$param == 'e.t2m']), mean(subdf2$mu[subdf2$param == 'e.tp']), mean(subdf2$mu[subdf2$param == 'e.utci']))
 e.epi.sd2 <- c(mean(subdf2$sd[subdf2$param == 'e.absh']), mean(subdf2$sd[subdf2$param == 'e.ssrd']), mean(subdf2$sd[subdf2$param == 'e.t2m']), mean(subdf2$sd[subdf2$param == 'e.tp']), mean(subdf2$sd[subdf2$param == 'e.utci']))
 
-o.epi.mu2 <- c(mean(subdf2$mu[subdf2$param == 'o.absh']), mean(subdf2$mu[subdf2$param == 'o.ssrd']), mean(subdf2$mu[subdf2$param == 'o.t2m']), mean(subdf2$mu[subdf2$param == 'o.tp']), mean(subdf2$mu[subdf2$param == 'o.utci']))
-o.epi.sd2 <- c(mean(subdf2$sd[subdf2$param == 'o.absh']), mean(subdf2$sd[subdf2$param == 'o.ssrd']), mean(subdf2$sd[subdf2$param == 'o.t2m']), mean(subdf2$sd[subdf2$param == 'o.tp']), mean(subdf2$sd[subdf2$param == 'o.utci']))
+o.epi.mu2 <- c(mean(subdf2$mu[subdf2$param == 'o.absh']), mean(subdf2$mu[subdf2$param == 'o.ssrd']), mean(subdf2$mu[subdf2$param == 'o.t2m'], na.rm=T), mean(subdf2$mu[subdf2$param == 'o.tp']), mean(subdf2$mu[subdf2$param == 'o.utci']))
+o.epi.sd2 <- c(mean(subdf2$sd[subdf2$param == 'o.absh']), mean(subdf2$sd[subdf2$param == 'o.ssrd']), mean(subdf2$sd[subdf2$param == 'o.t2m'], na.rm=T), mean(subdf2$sd[subdf2$param == 'o.tp']), mean(subdf2$sd[subdf2$param == 'o.utci']))
 
 subdf3 <- subset(df, Country != "" & Region == "" & group == "Combined")
 e.epi.mu3 <- c(mean(subdf3$mu[subdf3$param == 'e.absh']), mean(subdf3$mu[subdf3$param == 'e.ssrd']), mean(subdf3$mu[subdf3$param == 'e.t2m']), mean(subdf3$mu[subdf3$param == 'e.tp']), mean(subdf3$mu[subdf3$param == 'e.utci']))
@@ -79,11 +86,32 @@ tbl <- data.frame(OLS=c(format.regtbl(e.ols.mu[1], e.ols.se[1]),
                               format.regtbl(o.epi.mu[5], o.epi.sd[5])))
 
 names(tbl) <- c("OLS", "Epi (Raw)", "Epi (Country)", "Epi (Hyper)")
-row.names(tbl) <- paste0(rep(c('e.', 'o.'), each=10), c(weather[1], " ", weather[2], "  ", weather[3], "   ", weather[4], "    ", weather[5], "     "))
+    row.names(tbl) <- paste0(rep(c('e.', 'o.'), each=10), c(weather[1], " ", weather[2], "  ", weather[3], "   ", weather[4], "    ", weather[5], "     "))
 xtable(tbl)
 
-tbl1 <- tbl
+alltbls[[filepath]] <- tbl
+}
 
-tbl <- cbind(tbl1[, -2], tbl2[, -1:-2])
-xtable(tbl)
+## Produce table
+tbl.row.names <- sapply(0:19, function(ii) ifelse(ii < 10, ifelse(ii %% 2 == 0, paste("Transmission", weather[1 + ii / 2]), ""), ifelse(ii %% 2 == 0, paste("Detection", weather[1 + (ii - 10) / 2]), "")))
+tbl <- cbind(tbl.row.names, alltbls[['../../results/epimodel-meta-1111-mixed-mobile-pop.csv']][, -2],
+             alltbls[['../../results/epimodel-meta-1111-mixed-all-pop.csv']][, -1:-2])
+names(tbl) <- c("", "OLS", "Bayes (Country)", "Bayes (Hyper)", "Bayes (Country)", "Bayes (Hyper)")
 
+print(xtable(tbl), include.rownames=F)
+
+## Produce bars
+
+gdf <- rbind(data.frame(weather=rep(weather, 2), mu=rep(e.ols.mu, 2), sd=rep(e.ols.se, 2), channel="OLS", panel=rep(c("Mobility-Only", "All Observations"), each=5)),
+             cbind(panel="Mobility-Only", allgdfs[['../../results/epimodel-meta-1111-mixed-mobile-pop.csv']]),
+             cbind(panel="All Observations", allgdfs[['../../results/epimodel-meta-1111-mixed-all-pop.csv']]))
+
+library(ggplot2)
+
+gdf$panel <- factor(gdf$panel, levels=c('Mobility-Only', 'All Observations'))
+gdf$channel <- factor(gdf$channel, levels=c('OLS', 'Transmission', 'Detection'))
+
+ggplot(gdf, aes(weather, mu, fill=channel)) +
+    facet_grid(. ~ panel) +
+    geom_bar(stat='identity', position='dodge') + geom_errorbar(aes(ymin=mu - 1.96*sd, ymax=mu + 1.96*sd), position=position_dodge(width=.875), width=.5) + theme_bw() + xlab(NULL) + ylab(NULL) +
+    scale_fill_discrete(name="Channel:")
