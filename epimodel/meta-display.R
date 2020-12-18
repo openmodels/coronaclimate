@@ -5,8 +5,8 @@ library(ggplot2)
 library(scales)
 library(PBSmapping)
 
-outfile <- "../../results/epimodel-meta-1030-all-pop.csv"
-suffix <- "-1030-all"
+outfile <- "../../results/epimodel-meta-1111-mixed-all-pop.csv"
+suffix <- "-1111-mixed-all"
 
 allrecorded <- read.csv(outfile)
 
@@ -119,7 +119,7 @@ for (paramgroup in unique(allrecorded$paramgroup)) {
 allrecorded$paramgroup[grep("-\\d", allrecorded$Country)] <- "Drop"
 
 ## Also overlay mobility values
-mobrecorded <- read.csv("../../results/epimodel-meta-1030-mobile-pop.csv")
+mobrecorded <- read.csv("../../results/epimodel-meta-1111-mixed-mobile-pop.csv")
 
 mobrecorded$paramlabel <- as.character(mobrecorded$param)
 for (param in names(labelmap))
@@ -163,12 +163,11 @@ ggplot(subset(allrecorded, Country == "" & paramgroup != "Drop"), aes(paramlabel
 sqrt(sum(subset(allrecorded, Country == "" & paramgroup != "Drop" & param %in% c('e.absh', 'e.r', 'e.t2m', 'e.tp', 'e.ssrd', 'e.utci'))$mu^2))
 sqrt(sum(subset(mobrecorded, Country == "" & paramgroup != "Drop" & param %in% c('e.absh', 'e.r', 'e.t2m', 'e.tp', 'e.ssrd', 'e.utci'))$mu^2))
 
-
 ## Look at variance across regions
 
 sumtbl <- subset(allrecorded, Country != "" & group == "Combined" & Region == "" & paramgroup != "Drop") %>% group_by(paramlabel) %>% summarize(mean.mu=mean(mu), sd.mu=sd(mu), mu.sd=mean(sd), ci.25=quantile(mu, .25), ci.75=quantile(mu, .75)) %>% left_join(subset(allrecorded, Country == "" & paramgroup != "Drop")[, c('paramlabel', 'mu')]) %>% left_join(subset(mobrecorded, Country == "" & paramgroup != "Drop")[, c('paramlabel', 'mu')], by='paramlabel')
 sumtbl$sd.ratio <- sumtbl$sd.mu / sumtbl$mu.sd
-print(xtable(sumtbl[nrow(sumtbl):1, c(1:2, 5:6, 9, 7:8)], digits=3), include.rownames=F)
+print(xtable(sumtbl[nrow(sumtbl):1, c(1:2, 5:6, 9, 8, 7)], digits=3), include.rownames=F)
 
 
 ## Prepare to map
@@ -202,8 +201,8 @@ shp2 <- shp %>% left_join(allsqssq[, c('PID', 'sssmu')])
 
 gp <- ggplot(shp2, aes(X, Y, fill=sssmu, group=paste(PID, SID))) +
     geom_polygon() + scale_y_continuous(name=NULL, limits=c(-60, 85), expand=c(0, 0)) +
-    scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name="Weather effect")
-ggsave(paste0("../../figures/epimodel-weather-sss.png"), width=8, height=3)
+    scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name="Weather effect", limits=c(0, max(shp2$sssmu)))
+ggsave(paste0("../../figures/epimodel-weather-1111-mixed-all-sss.png"), width=8, height=3)
 
 weatherscales <- apply(df[, weather], 2, sd)
 
@@ -215,8 +214,60 @@ shp2 <- shp %>% left_join(allsss2[, c('PID', 'totsss')])
 
 gp <- ggplot(shp2, aes(X, Y, fill=totsss, group=paste(PID, SID))) +
     geom_polygon() + scale_y_continuous(name=NULL, limits=c(-60, 85), expand=c(0, 0)) +
-    scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name="Weather variance")
-ggsave(paste0("../../figures/epimodel-weather-totsss.png"), width=8, height=3)
+    scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name="Weather variance", limits=c(0, max(shp2$totsss)))
+ggsave(paste0("../../figures/epimodel-weather-1111-mixed-all-totsss.png"), width=8, height=3)
+
+## Version 2: Estiamte the variation in logbeta and logomega from weather
+
+library(lfe)
+
+allparams <- subset(allrecorded3, param %in% c('logbeta', 'e.absh', 'e.r', 'e.t2m', 'e.tp', 'e.ssrd', 'e.utci',
+                                               'logomega', 'o.absh', 'o.r', 'o.t2m', 'o.tp', 'o.ssrd', 'o.utci')) %>% group_by(regid) %>% summarize(Country=Country[1], logbeta=mean(mu[param == 'logbeta']), e.absh=mean(mu[param == 'e.absh']), e.t2m=mean(mu[param == 'e.t2m']), e.tp=mean(mu[param == 'e.tp']), e.ssrd=mean(mu[param == 'e.ssrd']), e.utci=mean(mu[param == 'e.utci']), logomega=mean(mu[param == 'logomega']), o.absh=mean(mu[param == 'o.absh']), o.t2m=mean(mu[param == 'o.t2m']), o.tp=mean(mu[param == 'o.tp']), o.ssrd=mean(mu[param == 'o.ssrd']), o.utci=mean(mu[param == 'o.utci']), PID=PID[1])
+
+df$regid <- paste(df$Country, df$Region, df$Locality)
+
+weather <- c('absh', 't2m', 'tp', 'ssrd', 'utci')
+weatherscales <- apply(df[, weather], 2, sd)
+
+plotdf <- data.frame()
+for (regid in unique(allparams$regid)) {
+    subdf <- df[df$regid == regid,]
+    values <- demeanlist(subdf[, weather], list(factor(rep('all', nrow(subdf))))) / t(matrix(weatherscales, ncol=nrow(subdf), nrow=length(weather)))
+
+    daily <- allparams$logbeta[allparams$regid == regid] + as.matrix(values) %*% t(allparams[allparams$regid == regid, paste0('e.', weather)])
+    e.clfrac <- quantile(exp(daily), .025) / mean(exp(daily))
+    e.chfrac <- quantile(exp(daily), .975) / mean(exp(daily))
+    e.sdfrac <- sd(exp(daily)) / mean(exp(daily))
+
+    omega <- exp(allparams$logomega[allparams$regid == regid])
+    daily <- (omega / (1 + omega)) * exp(as.matrix(values) %*% t(allparams[allparams$regid == regid, paste0('o.', weather)]))
+    o.clfrac <- quantile(daily, .025) / mean(daily)
+    o.chfrac <- quantile(daily, .975) / mean(daily)
+    o.sdfrac <- sd(daily) / mean(daily)
+
+    plotdf <- rbind(plotdf, data.frame(PID=allparams$PID[allparams$regid == regid],
+                                       e.sdfrac, o.sdfrac))
+}
+
+shp2 <- shp %>% left_join(plotdf)
+
+gp <- ggplot(shp2, aes(X, Y, fill=e.sdfrac, group=paste(PID, SID))) +
+    geom_polygon() + scale_y_continuous(name=NULL, limits=c(-60, 85), expand=c(0, 0)) +
+    scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name="Beta SD\nChange", trans='log10', labels=scales::percent) +#limits=c(0, max(shp2$e.sdfrac))) +
+    theme(legend.justification=c(0,0), legend.position=c(0.01,0.01))
+ggsave(paste0("../../figures/epimodel-weather-1111-mixed-all-esd.png"), width=8, height=3)
+
+gp <- ggplot(shp2, aes(X, Y, fill=o.sdfrac, group=paste(PID, SID))) +
+    geom_polygon() + scale_y_continuous(name=NULL, limits=c(-60, 85), expand=c(0, 0)) +
+    scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name="Omega SD\nChange", trans='log10', labels=scales::percent) +
+    theme(legend.justification=c(0,0), legend.position=c(0.01,0.01))
+ggsave(paste0("../../figures/epimodel-weather-1111-mixed-all-osd.png"), width=8, height=3)
+
+mean(plotdf$e.sdfrac[!is.na(plotdf$PID)]) * 100
+mean(plotdf$o.sdfrac[!is.na(plotdf$PID)]) * 100
+
+quantile(plotdf$e.sdfrac[!is.na(plotdf$PID)], c(.025, .975)) * 100
+quantile(plotdf$o.sdfrac[!is.na(plotdf$PID)], c(.025, .975)) * 100
 
 ## Plot the US
 
