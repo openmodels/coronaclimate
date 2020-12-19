@@ -9,7 +9,7 @@ rstan_options(auto_write = TRUE)
 resultdir <- "results"
 in.version <- "1201"
 out.version <- "1201"
-code.version <- "1030"
+code.version <- "1218"
 
 df <- read.csv("../../cases/panel_all.csv")
 df$regid <- paste(df$Country, df$Region, df$Locality)

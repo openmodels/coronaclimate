@@ -5,8 +5,9 @@ library(ggplot2)
 library(scales)
 library(PBSmapping)
 
-outfile <- "../../results/epimodel-meta-1111-mixed-all-pop.csv"
-suffix <- "-1111-mixed-all"
+outfile <- "../../results/epimodel-meta-1201-all-pop.csv"
+outfile.mob <- "../../results/epimodel-meta-1201-mobile-pop.csv"
+suffix <- "-1201-all"
 
 allrecorded <- read.csv(outfile)
 
@@ -119,7 +120,7 @@ for (paramgroup in unique(allrecorded$paramgroup)) {
 allrecorded$paramgroup[grep("-\\d", allrecorded$Country)] <- "Drop"
 
 ## Also overlay mobility values
-mobrecorded <- read.csv("../../results/epimodel-meta-1111-mixed-mobile-pop.csv")
+mobrecorded <- read.csv(outfile.mob)
 
 mobrecorded$paramlabel <- as.character(mobrecorded$param)
 for (param in names(labelmap))
@@ -144,10 +145,13 @@ for (paramgroup in unique(mobrecorded$paramgroup)) {
 
 mobrecorded$paramgroup[grep("-\\d", mobrecorded$Country)] <- "Drop"
 
+allrecorded$paramgroup[allrecorded$param == "mobility_slope" & !(allrecorded$regid %in% unique(mobrecorded$regid))] <- "Drop"
+
 global.mobrecorded <- subset(mobrecorded, Country == "" & paramgroup != "Drop")
 
-allrecorded$paramgroup <- factor(allrecorded$paramgroup, c("Period Lengths", "Proportional Response", "Behavioural Response", "Baseline Log Rates", "Weather on Log Transmission", "Weather on Log Detection"))
-global.mobrecorded$paramgroup <- factor(global.mobrecorded$paramgroup, c("Period Lengths", "Proportional Response", "Behavioural Response", "Baseline Log Rates", "Weather on Log Transmission", "Weather on Log Detection"))
+allrecorded$paramgroup <- factor(allrecorded$paramgroup, c("Period Lengths", "Proportional Response", "Behavioural Response", "Baseline Log Rates", "Weather on Log Transmission", "Weather on Log Detection", "Drop"))
+global.mobrecorded$paramgroup <- factor(global.mobrecorded$paramgroup, c("Period Lengths", "Proportional Response", "Behavioural Response", "Baseline Log Rates", "Weather on Log Transmission", "Weather on Log Detection", "Drop"))
+
 
 ggplot(subset(allrecorded, Country == "" & paramgroup != "Drop"), aes(paramlabel, mu)) +
     facet_wrap(~ paramgroup, ncol=1, scales="free") +
@@ -155,6 +159,19 @@ ggplot(subset(allrecorded, Country == "" & paramgroup != "Drop"), aes(paramlabel
     geom_violin(data=subset(allrecorded, Country != "" & group == "Raw" & Region == "" & paramgroup != "Drop"), colour="#83242480", scale="width") + # muted('red'), alpha=.5
     geom_violin(data=subset(allrecorded, Country != "" & group == "Combined" & Region == "" & paramgroup != "Drop"), fill=muted('blue'), alpha=.5, linetype='blank', scale="width") +
         geom_point(data=global.mobrecorded, aes(colour='Mobility only')) + geom_errorbar(data=global.mobrecorded, aes(ymin=ci2.5, ymax=ci97.5, colour='Mobility only')) +
+        geom_point(aes(colour='All observations')) + geom_errorbar(aes(ymin=ci2.5, ymax=ci97.5, colour='All observations')) +
+        scale_colour_discrete(name=NULL) +
+        theme_bw() + ylab("Hyper-paramater value and 95% CI") + xlab(NULL)
+
+validgroups <- levels(allrecorded$paramgroup)[!(levels(allrecorded$paramgroup) %in% c("Drop", "Behavioural Response", "Baseline Log Rates"))]
+
+ggplot(subset(allrecorded, Country == "" & paramgroup %in% validgroups), aes(paramlabel, mu)) +
+    facet_wrap(~ paramgroup, ncol=1, scales="free") +
+    coord_flip() +
+    geom_violin(data=subset(allrecorded, Country != "" & group == "Raw" & Region == "" & paramgroup %in% validgroups), colour="#83242480", scale="width") + # muted('red'), alpha=.5
+    geom_violin(data=subset(allrecorded, Country != "" & group == "Combined" & Region == "" & paramgroup %in% validgroups), fill=muted('blue'), alpha=.5, linetype='blank', scale="width") +
+        geom_point(data=subset(global.mobrecorded, paramgroup %in% validgroups), aes(colour='Mobility only')) +
+        geom_errorbar(data=subset(global.mobrecorded, paramgroup %in% validgroups), aes(ymin=ci2.5, ymax=ci97.5, colour='Mobility only')) +
         geom_point(aes(colour='All observations')) + geom_errorbar(aes(ymin=ci2.5, ymax=ci97.5, colour='All observations')) +
         scale_colour_discrete(name=NULL) +
         theme_bw() + ylab("Hyper-paramater value and 95% CI") + xlab(NULL)

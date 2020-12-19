@@ -2,12 +2,19 @@ setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
 
 library(lubridate)
 
-result.files <- c('epimodel-0604.csv', 'epimodel-0604-ww.csv', 'epimodel-0614.csv', 'epimodel-0615.csv', 'epimodel-0616.csv', 'epimodel-meta-0616.csv', 'epimodel-0728.csv', 'epimodel-0730.csv', 'epimodel-0803.csv', 'epimodel-0805.csv', 'epimodel-0806.csv', 'epimodel-0806-x5.csv', 'epimodel-meta-0806-x5.csv', 'epimodel-0817-run1.csv', 'epimodel-meta-0817-run1.csv', 'epimodel-0817.csv', 'epimodel-meta-0817.csv', 'epimodel-0817-noprior.csv', 'epimodel-meta-0817-noprior.csv', 'epimodel-0907.csv', 'epimodel-meta-0907.csv', 'epimodel-meta-0907-nobs.csv', 'epimodel-meta-0907-pop.csv', 'epimodel-meta-0907-region.csv', 'epimodel-0917.csv', 'epimodel-0921.csv', 'epimodel-meta-0921-pop.csv')
-result.names <- c('Kucharski et al.', 'Include Weather', 'Handle Deaths', 'Improve Priors', 'Death & Not', 'Full Meta', 'Early & Late', 'Drop Reportable', 'Mobility Prior', 'Constant Omega', 'Weather Priors', 'Loose Priors', 'Full Meta 2', 'New Weather', 'Full Meta 3', 'New Weather R2', 'Full Meta 3 R2', 'New Weather NoP', 'Full Meta 3 NoP', 'Omega Effect', 'Full Meta 4', 'Full Meta 4 Pop', 'Full Meta 4 NObs', 'Full Meta 4 Region', 'Linear Omega', 'Smooth Omega', 'Full Meta 5 Pop')
-result.ctime <- parse_date_time(c('06/04/2020 20:05:51', '06/11/2020 07:49:16', '06/14/2020 14:03:17', '06/15/2020 17:26:33', '06/17/2020 17:59:03', '06/18/2020 15:17:53', '07/30/2020 13:09:45', '08/01/2020 10:52:20', '08/03/2020 18:33:48', '08/06/2020 00:05:45', '08/06/2020 11:21:01', '08/06/2020 23:03:18', '08/13/2020 13:16:36', NA, NA, NA, NA, NA, NA, NA, NA, rep(NA, 6)), '%m/%d/%y %H:%M:%S', tz='GB')
+result.files <- c('epimodel-0604.csv', 'epimodel-0604-ww.csv', 'epimodel-0615.csv',
+                  'epimodel-meta-0616.csv', 'epimodel-0803.csv', 'epimodel-meta-0806-x5.csv',
+                  'epimodel-meta-0817.csv', 'epimodel-meta-0817-noprior.csv',
+                  'epimodel-meta-0907-nobs.csv', 'epimodel-meta-0907-pop.csv', 'epimodel-meta-0907-region.csv',
+                  'epimodel-meta-0921-pop.csv', 'epimodel-meta-1030-all-pop.csv', 'epimodel-meta-1111-mixed-all-pop.csv')
+result.names <- c('Kucharski et al.', 'Include Weather', 'Handle Deaths',
+                  'Death & Not', 'Early/Late & Mobility', 'Const. Omega & Priors',
+                  'New Weather', 'Drop Priors',
+                  'Omega Effect, by Pop.', 'Omega Effect, by Obs.', 'Omega Effect, by Reg.',
+                  'Smooth Omega', 'Estimated Testing', 'OLS Compare')
 
-coeff.names <- list('alpha'='Time Variance', 'invsigma'='Incubation Period', 'invgamma'='Infectious Period', 'invkappa'='Reporting Delay', 'omega'='Reporting Rate', 'error'='Model Error', 'e.absh'='Beta[Abs. Humid.]', 'e.r'='Beta[Rel. Humid.]', 'e.t2m'='Beta[Surface Temp.]', 'e.tp'='Beta[Total Prec.]', 'o.absh'='Zeta[Abs. Humid.]', 'o.r'='Zeta[Rel. Humid.]', 'o.t2m'='Zeta[Surface Temp.]', 'o.tp'='Zeta[Total Prec.]', 'deathrate'='Death Rate', 'deathomegaplus'='Death Reporting', 'portion_early'='Portion Early', 'mobility_slope'='Mobility Slope', 'logbeta'='Log Transmission', 'logomega'='Log Reporting', 'eein'='Infected Imports', 'omega0'='Initial Reporting', 'domega'='Reporting Slope')
-coeff.order <- c('Time Variance', 'Incubation Period', 'Infectious Period', 'Reporting Delay', 'Reporting Rate', 'Initial Reporting', 'Reporting Slope', 'Model Error', 'Beta[Abs. Humid.]', 'Beta[Rel. Humid.]', 'Beta[Surface Temp.]', 'Beta[Total Prec.]', 'Zeta[Abs. Humid.]', 'Zeta[Rel. Humid.]', 'Zeta[Surface Temp.]', 'Zeta[Total Prec.]', 'Death Rate', 'Death Reporting', 'Portion Early', 'Mobility Slope', 'Log Transmission', 'Log Reporting', 'Infected Imports')
+coeff.names <- list('alpha'='Time Variance', 'invsigma'='Incubation Period', 'invgamma'='Infectious Period', 'omega'='Reporting Rate', 'error'='Model Error', 'e.absh'='Beta[Abs. Humid.]', 'e.r'='Beta[Rel. Humid.]', 'e.t2m'='Beta[Surface Temp.]', 'e.tp'='Beta[Total Prec.]', 'o.absh'='Zeta[Abs. Humid.]', 'o.r'='Zeta[Rel. Humid.]', 'o.t2m'='Zeta[Surface Temp.]', 'o.tp'='Zeta[Total Prec.]', 'deathrate'='Death Rate', 'deathomegaplus'='Death Reporting', 'portion_early'='Portion Early', 'mobility_slope'='Mobility Slope', 'logbeta'='Log Transmission', 'logomega'='Log Reporting', 'eein'='Infected Imports', 'omega0'='Initial Reporting', 'domega'='Reporting Slope', 'invkappa'='Testing Delay', 'invtheta'='Reporting Delay', 'e.ssrd', 'e.ssrd'='Beta[Solar Rad.]', 'e.utci'='Beta[Thermal Index]', 'o.ssrd'='Zeta[Solar Rad.]', 'o.utci'='Zeta[Thermal Index]')
+coeff.order <- c('Time Variance', 'Incubation Period', 'Infectious Period', 'Testing Delay', 'Reporting Delay', 'Reporting Rate', 'Initial Reporting', 'Reporting Slope', 'Model Error', 'Beta[Abs. Humid.]', 'Beta[Rel. Humid.]', 'Beta[Surface Temp.]', 'Beta[Total Prec.]', 'Beta[Solar Rad.]', 'Beta[Thermal Index]', 'Zeta[Abs. Humid.]', 'Zeta[Rel. Humid.]', 'Zeta[Surface Temp.]', 'Zeta[Total Prec.]', 'Zeta[Solar Rad.]', 'Zeta[Thermal Index]', 'Death Rate', 'Death Reporting', 'Portion Early', 'Mobility Slope', 'Log Transmission', 'Log Reporting', 'Infected Imports')
 
 fits <- data.frame()
 performs <- data.frame()
@@ -32,7 +39,7 @@ for (rr in 1:length(result.files)) {
         else
             rhat <- NA
 
-        if (rr >= which(result.files == 'epimodel-0730.csv') & rr <= which(result.files == 'epimodel-0806-x5.csv')) {
+        if (rr >= which(result.files == 'epimodel-0803.csv') & rr <= which(result.files == 'epimodel-meta-0806-x5.csv')) {
             if (param == 'e.absh')
                 param <- 'e.r'
             else if (param == 'e.r')
@@ -59,24 +66,21 @@ for (rr in 1:length(result.files)) {
     else
         rhat <- NA
     regions <- length(unique(df$regid))
-    time0 <- result.ctime[rr]
-    time1 <- file.info(filepath)$mtime
-    rate <- (time1 - time0) / (regions - 1)
-    performs <- rbind(performs, data.frame(model=result.names[rr], regions, rate, rhat))
+    performs <- rbind(performs, data.frame(model=result.names[rr], regions, rhat))
 }
 
-performs[, -3]
+performs
 
 library(ggplot2)
 
 fits$model <- factor(fits$model, levels=rev(result.names))
 fits$param.name <- factor(fits$param.name, coeff.order)
 
-ggplot(fits, aes(model, meanmu)) +
-    facet_wrap(~ param.name, scales='free_x', ncol=7) +
+gp <- ggplot(fits[!(fits$param %in% c('logbeta', 'logomega')),], aes(model, meanmu)) +
+    facet_wrap(~ param.name, scales='free_x', ncol=8) +
     geom_errorbar(aes(ymin=mean25, ymax=mean75)) +
     geom_linerange(aes(ymin=mu25q, ymax=mu75q), col='red', linetype='dashed') +
     geom_linerange(aes(ymin=ymin, ymax=ymax), col='blue') +
     coord_flip() + scale_y_continuous(expand=c(.01, .01)) + theme_bw() +
     xlab(NULL) + ylab("Parameter Estimate")
-
+ggsave("../../figures/compare-models.pdf", gp, width=10, height=8)

@@ -40,9 +40,9 @@ labelmap <- list('mobility_slope'="Mobility Adjustment",
 
 ## Make raw histograms with mobile labelling
 
-outfile <- "../../results/epimodel-meta-1030-all-pop.csv"
-mobilefile <- "../../results/epimodel-meta-1030-mobile-pop.csv"
-suffix <- "1030-compare"
+outfile <- "../../results/epimodel-meta-1111-mixed-all-pop.csv"
+mobilefile <- "../../results/epimodel-meta-1111-mixed-mobile-pop.csv"
+suffix <- "-1111-mixed-compare"
 
 allrecorded <- read.csv(outfile)
 mobrecorded <- read.csv(mobilefile)
@@ -60,6 +60,7 @@ for (param in unique(results$param)) {
     limits <- quantile(results$mu[results$param == param], c(.025, .975), na.rm=T)
     results$showit[results$param == param] <- !is.na(results$mu[results$param == param]) & results$mu[results$param == param] > limits[1] & results$mu[results$param == param] < limits[2]
 }
+results$showit[results$param == 'mobility_slope' & !results$mobile] <- F
 
 results$paramlabel <- as.character(results$param)
 for (param in names(labelmap))
@@ -77,7 +78,7 @@ ggsave(paste0("../../figures/raw-results", suffix, ".pdf"), width=12, height=7)
 
 ## Make violin plots
 
-outfiles <- c("../../results/epimodel-meta-1030-all-pop.csv", "../../results/epimodel-meta-1030-mobile-pop.csv")
+outfiles <- c("../../results/epimodel-meta-1111-mixed-all-pop.csv", "../../results/epimodel-meta-1111-mixed-mobile-pop.csv")
 outlabels <- c("All", "Mobile only")
 allrecorded <- data.frame()
 

@@ -1,5 +1,7 @@
 setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
 
+mainmodel <- '1201'
+
 weather <- c('absh', 'ssrd', 't2m', 'tp', 'utci')
 e.ols.mu <- c(0.03344, -0.00332, -0.04791, -0.00190, -0.00684)
 e.ols.se <- c(0.01493, 0.00423, 0.01812, 0.00135, 0.00632)
@@ -7,7 +9,7 @@ e.ols.se <- c(0.01493, 0.00423, 0.01812, 0.00135, 0.00632)
 alltbls <- list()
 allgdfs <- list()
 
-for (filepath in c('../../results/epimodel-meta-1030-all-pop.csv', '../../results/epimodel-meta-1030-mobile-pop.csv', '../../results/epimodel-meta-1111-mixed-all-pop.csv', '../../results/epimodel-meta-1111-mixed-mobile-pop.csv')) {
+for (filepath in c('../../results/epimodel-meta-1030-all-pop.csv', '../../results/epimodel-meta-1030-mobile-pop.csv', paste0('../../results/epimodel-meta-', mainmodel, '-all-nobs.csv'), paste0('../../results/epimodel-meta-', mainmodel, '-mobile-nobs.csv'))) {
 
 df <- read.csv(filepath)
 subdf <- subset(df, Country == "" & Region == "")
@@ -94,8 +96,8 @@ alltbls[[filepath]] <- tbl
 
 ## Produce table
 tbl.row.names <- sapply(0:19, function(ii) ifelse(ii < 10, ifelse(ii %% 2 == 0, paste("Transmission", weather[1 + ii / 2]), ""), ifelse(ii %% 2 == 0, paste("Detection", weather[1 + (ii - 10) / 2]), "")))
-tbl <- cbind(tbl.row.names, alltbls[['../../results/epimodel-meta-1111-mixed-mobile-pop.csv']][, -2],
-             alltbls[['../../results/epimodel-meta-1111-mixed-all-pop.csv']][, -1:-2])
+tbl <- cbind(tbl.row.names, alltbls[[paste0('../../results/epimodel-meta-', mainmodel, '-mobile-nobs.csv')]][, -2],
+             alltbls[[paste0('../../results/epimodel-meta-', mainmodel, '-all-nobs.csv')]][, -1:-2])
 names(tbl) <- c("", "OLS", "Bayes (Country)", "Bayes (Hyper)", "Bayes (Country)", "Bayes (Hyper)")
 
 print(xtable(tbl), include.rownames=F)
@@ -103,8 +105,8 @@ print(xtable(tbl), include.rownames=F)
 ## Produce bars
 
 gdf <- rbind(data.frame(weather=rep(weather, 2), mu=rep(e.ols.mu, 2), sd=rep(e.ols.se, 2), channel="OLS", panel=rep(c("Mobility-Only", "All Observations"), each=5)),
-             cbind(panel="Mobility-Only", allgdfs[['../../results/epimodel-meta-1111-mixed-mobile-pop.csv']]),
-             cbind(panel="All Observations", allgdfs[['../../results/epimodel-meta-1111-mixed-all-pop.csv']]))
+             cbind(panel="Mobility-Only", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-mobile-nobs.csv')]]),
+             cbind(panel="All Observations", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-all-nobs.csv')]]))
 
 library(ggplot2)
 
