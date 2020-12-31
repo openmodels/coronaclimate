@@ -69,8 +69,8 @@ parameters {
   // effect of weather
   vector<lower=-.1, upper=.1>[K] effect;
   vector<lower=-.1, upper=.1>[K] omegaeffect;
-  vector<lower=-.1, upper=.1>[7] doweffect;
-  vector<lower=-.1, upper=.1>[7] dowomegaeffect;
+  vector<lower=-.1, upper=.1>[6] doweffect6;
+  vector<lower=-.1, upper=.1>[6] dowomegaeffect6;
 
   // affine transform for mobility
   real<lower=0, upper=10> mobility_slope;
@@ -94,9 +94,20 @@ transformed parameters {
   vector<lower=0>[T] qq; // waiting to be tested
   vector<lower=0>[T] rr; // waiting to be reported
 
+  // transformed variables
+  vector[7] doweffect;
+  vector[7] dowomegaeffect;
+
   vector[T-1] logomega;
   vector[T-1] omega;
   vector<lower=0>[T-1] dcc; // confirmed cases
+
+  doweffect[7] = 0;
+  dowomegaeffect[7] = 0;
+  for (dd in 1:6) {
+    doweffect[dd] = doweffect6[dd];
+    dowomegaeffect[dd] = dowomegaeffect6[dd];
+  }
 
   logbeta[1] = log(beta0);
   logbeta[2:T] = log(beta0) + cumulative_sum(dlogbeta);
@@ -190,8 +201,8 @@ parameters {
   // effect of weather
   vector<lower=-.1, upper=.1>[K] effect;
   vector<lower=-.1, upper=.1>[K] omegaeffect;
-  vector<lower=-.1, upper=.1>[7] doweffect;
-  vector<lower=-.1, upper=.1>[7] dowomegaeffect;
+  vector<lower=-.1, upper=.1>[6] doweffect6;
+  vector<lower=-.1, upper=.1>[6] dowomegaeffect6;
 
   // affine transform for mobility
   real<lower=0, upper=10> mobility_slope;
@@ -215,10 +226,21 @@ transformed parameters {
   vector<lower=0>[T] qq; // waiting to be tested
   vector<lower=0>[T] rr; // waiting to be reported
 
+  // transformed variables
+  vector[7] doweffect;
+  vector[7] dowomegaeffect;
+
   vector[T-1] logomega;
   vector[T-1] omega;
   vector<lower=0>[T-1] dcc; // confirmed cases
   vector<lower=0>[T-1] ddeaths; // deaths
+
+  doweffect[7] = 0;
+  dowomegaeffect[7] = 0;
+  for (dd in 1:6) {
+    doweffect[dd] = doweffect6[dd];
+    dowomegaeffect[dd] = dowomegaeffect6[dd];
+  }
 
   logbeta[1] = log(beta0);
   logbeta[2:T] = log(beta0) + cumulative_sum(dlogbeta);
