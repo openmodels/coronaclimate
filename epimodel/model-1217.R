@@ -293,7 +293,11 @@ if (!do.multiproc) {
     }
 }
 
-for (regid in unique(df$regid)[sample(1:length(unique(df$regid)))]) {
+randorder <- unique(df$regid)[sample(1:length(unique(df$regid)))]
+cntyorder <- unique(df$regid[df$Region == '' & df$Locality == ''])
+finalorder <- c(cntyorder, randorder[!(randorder %in% cntyorder)])
+
+for (regid in finalorder) {
     if (!do.multiproc) {
         if (regid %in% results$regid)
             next

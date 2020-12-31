@@ -18,7 +18,7 @@ wt.sd <- function(x,wt) {
 bounds <- list("alpha"=c(0, 10), "invgamma"=c(2, 100), "invsigma"=c(2, 100),
                "invkappa"=c(1, 100), "invtheta"=c(1, 100),
        	       "omega"=c(0, 1), "mobility_slope"=c(-1, 10),
-	       "deathrate"=c(0, 1), "deathomegaplus"=c(0, 1), "error"=c(0, 10),
+	       "deathrate"=c(0, 1), "deathomegaplus"=c(0, 1), "deathlearning"=c(-.01, 0), "error"=c(0, 10),
                "logbeta"=c(-10, 0), "logomega"=c(-10, 0), "eein"=c(0, 1e4),
                "e.absh"=c(-.1, .1), "e.r"=c(-.1, .1), "e.t2m"=c(-.1, .1), "e.tp"=c(-.1, .1), "e.ssrd"=c(-.1, .1), "e.utci"=c(-.1, .1),
 	       "o.absh"=c(-.1, .1), "o.r"=c(-.1, .1), "o.t2m"=c(-.1, .1), "o.tp"=c(-.1, .1), "o.ssrd"=c(-.1, .1), "o.utci"=c(-.1, .1))
