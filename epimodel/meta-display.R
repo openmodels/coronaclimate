@@ -5,15 +5,17 @@ library(ggplot2)
 library(scales)
 library(PBSmapping)
 
-outfile <- "../../results/epimodel-meta-1201-all-pop.csv"
-outfile.mob <- "../../results/epimodel-meta-1201-mobile-pop.csv"
-suffix <- "-1201-all"
+outfile <- "../../results/epimodel-meta-1217-all-nobs.csv"
+outfile.mob <- "../../results/epimodel-meta-1217-mobile-nobs.csv"
+suffix <- "-1217-all"
+
+do.old.figures <- F
 
 allrecorded <- read.csv(outfile)
 
 paramorder <- c('alpha', 'invgamma', 'invsigma', 'invkappa', 'invtheta',
                 'mobility_slope', 'omega', 'portion_early',
-                'deathrate', 'deathomegaplus',
+                'deathrate', 'deathomegaplus', 'deathlearning',
                 'logbeta', 'logomega', 'eein',
                 'e.absh', 'e.r', 'e.t2m', 'e.tp', 'e.ssrd', 'e.utci',
                 'o.absh', 'o.r', 'o.t2m', 'o.tp', 'o.ssrd', 'o.utci', 'error')
@@ -28,6 +30,7 @@ labelmap <- list('mobility_slope'="Mobility Adjustment",
                  'omega'="Recording Rate",
                  'deathrate'="Death Rate",
                  'deathomegaplus'="Extra Record of Deaths",
+                 'deathlearning'="Death Learning Rate",
                  'portion_early'="Portion Reported Early",
                  'e.t2m'="Air Temperature Trans.",
                  'e.tp'="Total Precipitation Trans.",
@@ -62,10 +65,12 @@ for (param in names(labelmap))
 
 results$paramlabel <- factor(results$paramlabel, levels=sapply(paramorder, function(param) labelmap[[param]]))
 
-ggplot(subset(results, showit), aes(mu)) +
-    facet_wrap(~ paramlabel, scales='free') +
-    geom_histogram() + xlab(NULL) + ylab(NULL) + theme_bw()
-ggsave(paste0("../../figures/raw-results", suffix, ".pdf"), width=12, height=7)
+if (do.old.figures) {
+    ggplot(subset(results, showit), aes(mu)) +
+        facet_wrap(~ paramlabel, scales='free') +
+        geom_histogram() + xlab(NULL) + ylab(NULL) + theme_bw()
+    ggsave(paste0("../../figures/raw-results", suffix, ".pdf"), width=12, height=7)
+}
 
 ## Scatter plot
 library(reshape2)
@@ -84,7 +89,9 @@ upper.panel<-function(x, y){
   points(x, y, pch=19, cex=.01)
 }
 
+png("../../figures/scattermatrix.png", width=1000, height=1000)
 pairs(results2[,-1], lower.panel=panel.cor, upper.panel=upper.panel)
+dev.off()
 
 ## Show all results
 for (pp in unique(allrecorded$param)) {
@@ -108,7 +115,7 @@ allrecorded$paramgroup[allrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh'
 allrecorded$paramgroup[allrecorded$param %in% c('o.t2m', 'o.tp', 'o.r', 'o.absh', 'o.ssrd', 'o.utci')] <- "Weather on Log Detection"
 allrecorded$paramgroup[allrecorded$param %in% c('portion_early', 'omega', 'deathrate', 'deathomegaplus')] <- "Proportional Response"
 allrecorded$paramgroup[allrecorded$param %in% c('mobility_slope', 'alpha')] <- "Behavioural Response"
-allrecorded$paramgroup[allrecorded$param %in% c('logbeta', 'logomega')] <- "Baseline Log Rates"
+allrecorded$paramgroup[allrecorded$param %in% c('logbeta', 'logomega', 'deathlearning')] <- "Baseline Log Rates"
 
 for (paramgroup in unique(allrecorded$paramgroup)) {
     botlev <- quantile(allrecorded$mu[allrecorded$paramgroup == paramgroup], .01, na.rm=T)
@@ -134,7 +141,7 @@ mobrecorded$paramgroup[mobrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh'
 mobrecorded$paramgroup[mobrecorded$param %in% c('o.t2m', 'o.tp', 'o.r', 'o.absh', 'o.ssrd', 'o.utci')] <- "Weather on Log Detection"
 mobrecorded$paramgroup[mobrecorded$param %in% c('portion_early', 'omega', 'deathrate', 'deathomegaplus')] <- "Proportional Response"
 mobrecorded$paramgroup[mobrecorded$param %in% c('mobility_slope', 'alpha')] <- "Behavioural Response"
-mobrecorded$paramgroup[mobrecorded$param %in% c('logbeta', 'logomega')] <- "Baseline Log Rates"
+mobrecorded$paramgroup[mobrecorded$param %in% c('logbeta', 'logomega', 'deathlearning')] <- "Baseline Log Rates"
 
 for (paramgroup in unique(mobrecorded$paramgroup)) {
     botlev <- quantile(mobrecorded$mu[mobrecorded$paramgroup == paramgroup], .01, na.rm=T)
@@ -162,6 +169,7 @@ ggplot(subset(allrecorded, Country == "" & paramgroup != "Drop"), aes(paramlabel
         geom_point(aes(colour='All observations')) + geom_errorbar(aes(ymin=ci2.5, ymax=ci97.5, colour='All observations')) +
         scale_colour_discrete(name=NULL) +
         theme_bw() + ylab("Hyper-paramater value and 95% CI") + xlab(NULL)
+ggsave(paste0("../../figures/epimodel-violins", suffix, ".pdf"), width=8, height=7.5)
 
 validgroups <- levels(allrecorded$paramgroup)[!(levels(allrecorded$paramgroup) %in% c("Drop", "Behavioural Response", "Baseline Log Rates"))]
 
@@ -175,10 +183,7 @@ ggplot(subset(allrecorded, Country == "" & paramgroup %in% validgroups), aes(par
         geom_point(aes(colour='All observations')) + geom_errorbar(aes(ymin=ci2.5, ymax=ci97.5, colour='All observations')) +
         scale_colour_discrete(name=NULL) +
         theme_bw() + ylab("Hyper-paramater value and 95% CI") + xlab(NULL)
-
-## Combined weather effect
-sqrt(sum(subset(allrecorded, Country == "" & paramgroup != "Drop" & param %in% c('e.absh', 'e.r', 'e.t2m', 'e.tp', 'e.ssrd', 'e.utci'))$mu^2))
-sqrt(sum(subset(mobrecorded, Country == "" & paramgroup != "Drop" & param %in% c('e.absh', 'e.r', 'e.t2m', 'e.tp', 'e.ssrd', 'e.utci'))$mu^2))
+ggsave(paste0("../../figures/epimodel-violins", suffix, "-present.pdf"), width=8, height=5.5)
 
 ## Look at variance across regions
 
@@ -210,6 +215,7 @@ for (pp in unique(allrecorded$param)) {
     ggsave(paste0("../../figures/epimodel-param-map-", pp, ".png"), width=8, height=3)
 }
 
+if (do.old.figures) {
 ## Plot "total weather effect"
 
 allsqssq <- subset(allrecorded3, param %in% c('e.absh', 'e.r', 'e.t2m', 'e.tp', 'e.ssrd', 'e.utci',
@@ -219,7 +225,7 @@ shp2 <- shp %>% left_join(allsqssq[, c('PID', 'sssmu')])
 gp <- ggplot(shp2, aes(X, Y, fill=sssmu, group=paste(PID, SID))) +
     geom_polygon() + scale_y_continuous(name=NULL, limits=c(-60, 85), expand=c(0, 0)) +
     scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name="Weather effect", limits=c(0, max(shp2$sssmu)))
-ggsave(paste0("../../figures/epimodel-weather-1111-mixed-all-sss.png"), width=8, height=3)
+ggsave(paste0("../../figures/epimodel-weather-1217-all-sss.png"), width=8, height=3)
 
 weatherscales <- apply(df[, weather], 2, sd)
 
@@ -232,7 +238,8 @@ shp2 <- shp %>% left_join(allsss2[, c('PID', 'totsss')])
 gp <- ggplot(shp2, aes(X, Y, fill=totsss, group=paste(PID, SID))) +
     geom_polygon() + scale_y_continuous(name=NULL, limits=c(-60, 85), expand=c(0, 0)) +
     scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name="Weather variance", limits=c(0, max(shp2$totsss)))
-ggsave(paste0("../../figures/epimodel-weather-1111-mixed-all-totsss.png"), width=8, height=3)
+ggsave(paste0("../../figures/epimodel-weather-1217-all-totsss.png"), width=8, height=3)
+}
 
 ## Version 2: Estiamte the variation in logbeta and logomega from weather
 
@@ -272,13 +279,13 @@ gp <- ggplot(shp2, aes(X, Y, fill=e.sdfrac, group=paste(PID, SID))) +
     geom_polygon() + scale_y_continuous(name=NULL, limits=c(-60, 85), expand=c(0, 0)) +
     scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name="Beta SD\nChange", trans='log10', labels=scales::percent) +#limits=c(0, max(shp2$e.sdfrac))) +
     theme(legend.justification=c(0,0), legend.position=c(0.01,0.01))
-ggsave(paste0("../../figures/epimodel-weather-1111-mixed-all-esd.png"), width=8, height=3)
+ggsave(paste0("../../figures/epimodel-weather-1217-all-esd.png"), width=8, height=3)
 
 gp <- ggplot(shp2, aes(X, Y, fill=o.sdfrac, group=paste(PID, SID))) +
     geom_polygon() + scale_y_continuous(name=NULL, limits=c(-60, 85), expand=c(0, 0)) +
     scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name="Omega SD\nChange", trans='log10', labels=scales::percent) +
     theme(legend.justification=c(0,0), legend.position=c(0.01,0.01))
-ggsave(paste0("../../figures/epimodel-weather-1111-mixed-all-osd.png"), width=8, height=3)
+ggsave(paste0("../../figures/epimodel-weather-1217-all-osd.png"), width=8, height=3)
 
 mean(plotdf$e.sdfrac[!is.na(plotdf$PID)]) * 100
 mean(plotdf$o.sdfrac[!is.na(plotdf$PID)]) * 100

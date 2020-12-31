@@ -1,6 +1,6 @@
 setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
 
-mobrecorded <- read.csv("../../results/epimodel-meta-1111-mixed-mobile-pop.csv")
+mobrecorded <- read.csv("../../results/epimodel-meta-1217-mobile-pop.csv")
 
 compare <- read.csv("literature.csv")
 compare <- subset(compare, Study != "Us" & Population != "Drop")

@@ -7,7 +7,7 @@ library(PBSmapping)
 
 paramorder <- c('alpha', 'invgamma', 'invsigma', 'invkappa', 'invtheta',
                 'mobility_slope', 'omega', 'portion_early',
-                'deathrate', 'deathomegaplus',
+                'deathrate', 'deathomegaplus', 'deathlearning',
                 'logbeta', 'logomega', 'eein',
                 'e.absh', 'e.r', 'e.t2m', 'e.tp', 'e.ssrd', 'e.utci',
                 'o.absh', 'o.r', 'o.t2m', 'o.tp', 'o.ssrd', 'o.utci', 'error')
@@ -22,6 +22,7 @@ labelmap <- list('mobility_slope'="Mobility Adjustment",
                  'omega'="Recording Rate",
                  'deathrate'="Death Rate",
                  'deathomegaplus'="Extra Record of Deaths",
+                 'deathlearning'="Death Learning Rate",
                  'portion_early'="Portion Reported Early",
                  'e.t2m'="Air Temperature Trans.",
                  'e.tp'="Total Precipitation Trans.",
@@ -40,9 +41,9 @@ labelmap <- list('mobility_slope'="Mobility Adjustment",
 
 ## Make raw histograms with mobile labelling
 
-outfile <- "../../results/epimodel-meta-1111-mixed-all-pop.csv"
-mobilefile <- "../../results/epimodel-meta-1111-mixed-mobile-pop.csv"
-suffix <- "-1111-mixed-compare"
+outfile <- "../../results/epimodel-meta-1217-all-nobs.csv"
+mobilefile <- "../../results/epimodel-meta-1217-mobile-nobs.csv"
+suffix <- "-1217-compare"
 
 allrecorded <- read.csv(outfile)
 mobrecorded <- read.csv(mobilefile)
@@ -78,7 +79,7 @@ ggsave(paste0("../../figures/raw-results", suffix, ".pdf"), width=12, height=7)
 
 ## Make violin plots
 
-outfiles <- c("../../results/epimodel-meta-1111-mixed-all-pop.csv", "../../results/epimodel-meta-1111-mixed-mobile-pop.csv")
+outfiles <- c("../../results/epimodel-meta-1217-all-nobs.csv", "../../results/epimodel-meta-1217-mobile-nobs.csv")
 outlabels <- c("All", "Mobile only")
 allrecorded <- data.frame()
 

@@ -1,6 +1,6 @@
 setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
 
-mainmodel <- '1201'
+mainmodel <- '1217'
 
 weather <- c('absh', 'ssrd', 't2m', 'tp', 'utci')
 e.ols.mu <- c(0.03344, -0.00332, -0.04791, -0.00190, -0.00684)
@@ -117,3 +117,4 @@ ggplot(gdf, aes(weather, mu, fill=channel)) +
     facet_grid(. ~ panel) +
     geom_bar(stat='identity', position='dodge') + geom_errorbar(aes(ymin=mu - 1.96*sd, ymax=mu + 1.96*sd), position=position_dodge(width=.875), width=.5) + theme_bw() + xlab(NULL) + ylab(NULL) +
     scale_fill_discrete(name="Channel:")
+ggsave(paste0("../../figures/ols-compare-", mainmodel, ".pdf"), width=8, height=2.5)
