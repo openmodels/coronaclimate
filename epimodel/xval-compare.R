@@ -2,12 +2,10 @@ setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
 
 library(dplyr)
 
+suffix <- "1217-all-nobs"
+
 df.xval <- read.csv("../../code/automated/crossval_length5_lastday_countries.csv")
-df.meta <- read.csv("../../results/epimodel-meta-1111-mixed-all-nobs.csv")
-
-subset(df.meta, Country == "Peru" & Region == "" & Locality == "" & group == "Combined" & param == "alpha")
-
-
+df.meta <- read.csv(paste0("../../results/epimodel-meta-", suffix, ".csv"))
 
 df.meta2 <- df.meta %>% filter(Country != "" & Region == "" & Locality == "" & group == "Combined") %>% group_by(param, Country) %>% summarize(mu=mu[nobs == max(nobs)], nobs=max(nobs))
 df.meta3 <- df.meta2 %>% group_by(Country) %>% summarize(delay.trans=mu[param == 'invgamma'][1] + mu[param == 'invsigma'][1], delay.detect=mu[param == 'invkappa'][1] + mu[param == 'invtheta'][1], regions=max(nobs))
@@ -22,9 +20,12 @@ ggplot(df, aes(LAST_MAX, delay.trans, size=regions)) +
 ggplot(df, aes(LAST_MAX, delay.detect)) +
     geom_point(aes(size=regions)) + geom_smooth(method='lm') + theme_bw()
 
-ggplot(df, aes(LAST_MAX, delay.detect)) +
-    geom_point(aes(size=regions)) + geom_text(aes(label=Country)) +
-    geom_smooth(method='lm') + theme_bw()
+ggplot(df, aes(x=LAST_MAX - 2.5, delay.detect)) +
+    geom_point(aes(size=regions)) + geom_text(aes(label=Country), hjust=0, nudge_x=0.2) +
+    geom_smooth(method='lm') + theme_bw() + xlab("Delay from cross-validation") +
+    ylab("Delay from epidemiological model") + scale_size_continuous("# of regions:") +
+scale_x_continuous(expand=c(.1, .1))
+ggsave(paste0("xval-compare-", suffix, ".pdf"), width=4, height=3) # Dimensions not tested
 
 cor(df$LAST_MAX, df$delay.detect)
 

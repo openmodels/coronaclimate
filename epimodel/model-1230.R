@@ -121,7 +121,7 @@ transformed parameters {
 
     qq[tt] = qq[tt-1] + new_ee1[tt-1] - qq[tt-1]/invkappa;
 
-    omega[tt-1] = (exp(logomega[tt-1]) / (1 + exp(logomega[tt-1]))) * exp(doweffect[1 + (tt % 7)] + dot_product(weather[tt-1], omegaeffect));
+    omega[tt-1] = (exp(logomega[tt-1]) / (1 + exp(logomega[tt-1]))) * exp(dowomegaeffect[1 + (tt % 7)] + dot_product(weather[tt-1], omegaeffect));
     rr[tt] = rr[tt-1] + omega[tt-1] * qq[tt-1]/invkappa - rr[tt-1]/invtheta;
 
     dcc[tt-1] = omega[tt-1] * rr[tt-1]/invtheta;
@@ -243,7 +243,7 @@ transformed parameters {
 
     qq[tt] = qq[tt-1] + new_ee1[tt-1] - qq[tt-1]/invkappa;
 
-    omega[tt-1] = (exp(logomega[tt-1]) / (1 + exp(logomega[tt-1]))) * exp(doweffect[1 + (tt % 7)] + dot_product(weather[tt-1], omegaeffect));
+    omega[tt-1] = (exp(logomega[tt-1]) / (1 + exp(logomega[tt-1]))) * exp(dowomegaeffect[1 + (tt % 7)] + dot_product(weather[tt-1], omegaeffect));
     rr[tt] = rr[tt-1] + omega[tt-1] * qq[tt-1]/invkappa - rr[tt-1]/invtheta;
 
     dcc[tt-1] = omega[tt-1] * rr[tt-1]/invtheta;
