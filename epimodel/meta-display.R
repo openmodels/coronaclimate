@@ -72,6 +72,7 @@ if (do.old.figures) {
     ggsave(paste0("../../figures/raw-results", suffix, ".pdf"), width=12, height=7)
 }
 
+if (do.old.figures) {
 ## Scatter plot
 library(reshape2)
 results2 <- dcast(subset(results, param != 'error' & showit), regid ~ param, value.var='mu')
@@ -92,6 +93,7 @@ upper.panel<-function(x, y){
 png("../../figures/scattermatrix.png", width=1000, height=1000)
 pairs(results2[,-1], lower.panel=panel.cor, upper.panel=upper.panel)
 dev.off()
+}
 
 ## Show all results
 for (pp in unique(allrecorded$param)) {
@@ -186,6 +188,7 @@ ggplot(subset(allrecorded, Country == "" & paramgroup %in% validgroups), aes(par
 ggsave(paste0("../../figures/epimodel-violins", suffix, "-present.pdf"), width=8, height=5.5)
 
 ## Look at variance across regions
+library(xtable)
 
 sumtbl <- subset(allrecorded, Country != "" & group == "Combined" & Region == "" & paramgroup != "Drop") %>% group_by(paramlabel) %>% summarize(mean.mu=mean(mu), sd.mu=sd(mu), mu.sd=mean(sd), ci.25=quantile(mu, .25), ci.75=quantile(mu, .75)) %>% left_join(subset(allrecorded, Country == "" & paramgroup != "Drop")[, c('paramlabel', 'mu')]) %>% left_join(subset(mobrecorded, Country == "" & paramgroup != "Drop")[, c('paramlabel', 'mu')], by='paramlabel')
 sumtbl$sd.ratio <- sumtbl$sd.mu / sumtbl$mu.sd
