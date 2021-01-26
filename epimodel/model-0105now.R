@@ -2,7 +2,7 @@
 
 source("../configs.R")
 
-version <- "1230now"
+version <- "0105now"
 
 casespath <- "../../cases/panel_all.csv"
 regfilter <- function(rows) T
