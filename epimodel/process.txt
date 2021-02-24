@@ -1,0 +1,13 @@
+1. Generating the results
+
+1. Run model-1217.R or multiproc model-1217.R N
+2. Can check progress with check-rhat.R or check-params.R
+3. Combine results with combine-parallel.R
+4. If you took multiple runs for some regions, use combine-parallel.R
+5. Run meta-model-1030.R
+
+Figure generation:
+
+1. xval-compare-S.pdf: xval-compare.R
+2. ols-compare-S.pdf and table in SI: ols-compare.R
+3. raw-results-1217-compare.pdf: meta-display-compare.R
