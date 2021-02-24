@@ -2,7 +2,7 @@
 
 source("../configs.R")
 
-version <- "0105"
+version <- "0105noprior"
 
 casespath <- "../../cases/panel_all.csv"
 weather <- c('absh', 't2m', 'tp', 'ssrd', 'utci')
