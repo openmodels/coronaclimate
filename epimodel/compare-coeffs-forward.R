@@ -33,6 +33,8 @@ for (group in unique(res.avg$group)) {
         next
     if (length(grep('three', group)) > 0)
         next
+    if (length(grep('250', group)) > 0)
+        next
     if (median(sign(res.avg$estimate[res.avg$group == group])) == -1) {
         res.avg$logest[res.avg$group == group] <- log(-res.avg$estimate[res.avg$group == group])
         res.avg$logest[res.avg$group == group & !is.finite(res.avg$logest)] <- NA
@@ -40,10 +42,10 @@ for (group in unique(res.avg$group)) {
     mod <- lm(logest ~ delaysum, data=res.avg[res.avg$group == group,])
     if (median(sign(res.avg$estimate[res.avg$group == group])) == -1) {
         res.avg$predicted[res.avg$group == group] <- -exp(predict(mod, res.avg[res.avg$group == group,]) + var(mod$resid) / 2)
-        transcoeff <- rbind(transcoeff, data.frame(group, intercept=-(mod$coeff[1] + var(mod$resid) / 2), slope=mod$coeff[2]))
+        transcoeff <- rbind(transcoeff, data.frame(group, sign=-1, intercept=mod$coeff[1] + var(mod$resid) / 2, slope=mod$coeff[2]))
     } else {
         res.avg$predicted[res.avg$group == group] <- exp(predict(mod, res.avg[res.avg$group == group,]) + var(mod$resid) / 2)
-        transcoeff <- rbind(transcoeff, data.frame(group, intercept=mod$coeff[1] + var(mod$resid) / 2, slope=mod$coeff[2]))
+        transcoeff <- rbind(transcoeff, data.frame(group, sign=1, intercept=mod$coeff[1] + var(mod$resid) / 2, slope=mod$coeff[2]))
     }
 }
 
