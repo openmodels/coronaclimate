@@ -1,7 +1,7 @@
 setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
 
-priordf <- rbind(read.csv("code/epimodel/coeffs_pol1_distlag_c02_1-12_global_modelselection-A00_nomob_10.csv"),
-                 read.csv("code/epimodel/coeffs_pol1_distlag_c02_1-12_global_modelselection-A00_nomob_11.csv"))
+priordf <- rbind(read.csv("code/epimodel/model-0210newprior-two.csv"),
+                 read.csv("code/epimodel/model-0210newprior-one.csv"))
 
 source("forward-0210.R")
 
