@@ -57,18 +57,18 @@ forward <- function(data, params) {
         dowomegaeffect[dd] <- params$dowomegaeffect6[dd];
     }
 
-    ss <- rep(NA, data$N)
-    new_ee1 <- rep(NA, data$N - 1)
-    ee1 <- rep(NA, data$N)
-    ee2 <- rep(NA, data$N)
-    ii1 <- rep(NA, data$N)
-    ii2 <- rep(NA, data$N)
-    qq <- rep(NA, data$N)
-    rr <- rep(NA, data$N)
+    ss <- rep(NA, data$T)
+    new_ee1 <- rep(NA, data$T - 1)
+    ee1 <- rep(NA, data$T)
+    ee2 <- rep(NA, data$T)
+    ii1 <- rep(NA, data$T)
+    ii2 <- rep(NA, data$T)
+    qq <- rep(NA, data$T)
+    rr <- rep(NA, data$T)
 
-    omega <- rep(NA, data$N - 1)
-    dcc <- rep(NA, data$N - 1)
-    ddeaths <- rep(NA, data$N - 1)
+    omega <- rep(NA, data$T - 1)
+    dcc <- rep(NA, data$T - 1)
+    ddeaths <- rep(NA, data$T - 1)
 
     ss[1] <- data$N;
     ee1[1] <- data$ii_init;
@@ -78,7 +78,7 @@ forward <- function(data, params) {
     qq[1] <- data$ii_init;
     rr[1] <- data$ii_init;
     for (tt in 2:data$T) {
-        new_ee1[tt-1] <- exp(params$logbeta[tt-1] + doweffect[1 + (tt %% 7)] + sum(data$weather[tt-1] * params$effect))*ss[tt-1]*(ii1[tt-1] + ii2[tt-1]) / data$N;
+        new_ee1[tt-1] <- exp(params$logbeta[tt-1] + doweffect[1 + (tt %% 7)] + sum(data$weather[tt-1,] * params$effect))*ss[tt-1]*(ii1[tt-1] + ii2[tt-1]) / data$N;
         ss[tt] <- ss[tt-1] - new_ee1[tt-1];
         ee1[tt] <- ee1[tt-1] + new_ee1[tt-1] - 2*ee1[tt-1]/params$invsigma + params$eein[tt-1];
         ee2[tt] <- ee2[tt-1] + 2*ee1[tt-1]/params$invsigma - 2*ee2[tt-1]/params$invsigma;
@@ -87,7 +87,7 @@ forward <- function(data, params) {
 
         qq[tt] <- qq[tt-1] + new_ee1[tt-1] - qq[tt-1]/params$invkappa;
 
-        omega[tt-1] <- (exp(params$logomega[tt-1]) / (1 + exp(params$logomega[tt-1]))) * exp(dowomegaeffect[1 + (tt %% 7)] + sum(data$weather[tt-1] * params$omegaeffect));
+        omega[tt-1] <- (exp(params$logomega[tt-1]) / (1 + exp(params$logomega[tt-1]))) * exp(dowomegaeffect[1 + (tt %% 7)] + sum(data$weather[tt-1,] * params$omegaeffect));
         rr[tt] <- rr[tt-1] + omega[tt-1] * qq[tt-1]/params$invkappa - rr[tt-1]/params$invtheta;
 
         dcc[tt-1] <- rr[tt-1]/params$invtheta;

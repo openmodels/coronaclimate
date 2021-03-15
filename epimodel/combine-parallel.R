@@ -4,6 +4,8 @@ finals <- list()
 todelete <- c()
 
 for (filename in list.files(outdir)) {
+   if (any(grep("-nodel.csv", filename)))
+     next
    print(filename)
    tryCatch({
       df <- read.csv(file.path(outdir, filename))

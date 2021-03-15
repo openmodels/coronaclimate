@@ -32,9 +32,7 @@ df4 <- data.frame(param=rep(df$param, 4),
                   variable=rep(c('mu', 'mu', 'sd', 'sd'), each=nrow(df)))
 
 source("plotlib.R")
-df4$label <- NA
-for (ii in 1:nrow(df4))
-    df4$label[ii] <- labelmap[[df4$param[ii]]]
+df4$label <- get.param.labels(df4$param)
 
 ggplot(subset(df4, !is.na(relative) & variable == 'mu'), aes(label, relative, colour=paired)) +
     coord_flip() +
@@ -87,9 +85,7 @@ for (param in unique(df$param)) {
 
 source("plotlib.R")
 
-results$label <- NA
-for (ii in 1:nrow(results))
-    results$label[ii] <- labelmap[[results$param[ii]]]
+results$label <- get.param.labels(results$param)
 
 library(ggplot2)
 

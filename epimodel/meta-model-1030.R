@@ -6,9 +6,9 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-resultdir <- "results"
-in.version <- "1201"
-out.version <- "1201"
+resultdir <- "results-saved"
+in.version <- "0105now"
+out.version <- "0105now"
 code.version <- "1218"
 
 df <- read.csv("../../cases/panel_all.csv")
