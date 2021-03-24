@@ -1,0 +1,11 @@
+Country,Region,Locality,ALPHA-3,GEO_ID_REFERENCE,GEO_ID,latitude,hemisphere
+Iceland,,Reykjav’k,ISL,GADM36_0,ISL,64.13,N
+France,Paris,Paris,FRA,GADM36_2,FRA.8.3_1,48.85,N
+USA,DC,Washington,USA,USA_FIPS,11001,38.9,N
+Pakistan,,Islamabad,PAK,GADM36_0,PAK,33.72,N
+Mexico,Mexico,Mexico City,MEX,GADM36_1,MEX.15_1,19.43,N
+Thailand,,Bangkok,THA,GADM36_0,THA,13.75,N
+Kenya,,Nairobi,KEN,GADM36_0,KEN,1.28,S
+Brazil,Distrito Federal,Bras’lia,BRA,GADM36_1,BRA.7_1,15.78,S
+South Africa,Western Cape,Cape Town,ZAF,GADM36_1,ZAF.9_1,33.92,S
+New Zealand,,Wellington,NZL,GADM36_0,NZL,41.28,S
