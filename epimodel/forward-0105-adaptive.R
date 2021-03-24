@@ -1,4 +1,4 @@
-forward.adaptive <- function(data, params, logbeta0, logomega0, alpha, dcc.true) {
+forward.adaptive <- function(data, params, logbeta.init, logomega.init, alpha, dcc.true) {
 ### Data:
 
     ## int<lower=0> T; // time periods
@@ -58,10 +58,10 @@ forward.adaptive <- function(data, params, logbeta0, logomega0, alpha, dcc.true)
     }
 
     logbeta <- rep(NA, data$T)
-    logbeta[1] <- logbeta0
+    logbeta[1] <- logbeta.init[1]
 
     logomega <- rep(NA, data$T)
-    logomega[1] <- logomega0
+    logomega[1] <- logomega.init[1]
 
     ss <- rep(NA, data$T)
     new_ee1 <- rep(NA, data$T - 1)
@@ -101,14 +101,14 @@ forward.adaptive <- function(data, params, logbeta0, logomega0, alpha, dcc.true)
 
         ## Construct new logbeta
         if (is.na(dcc.true[tt-1]) || dcc[tt-1] == dcc.true[tt-1]) {
-            logbeta[tt] <- logbeta[tt-1]
-            logomega[tt] <- logomega[tt-1]
+            logbeta[tt] <- logbeta[tt-1] + (logbeta.init[tt] - logbeta.init[tt-1])
+            logomega[tt] <- logomega[tt-1] + (logomega.init[tt] - logomega.init[tt-1])
         } else if (dcc[tt-1] < dcc.true[tt-1]) {
-            logbeta[tt] <- min(0, logbeta[tt-1] + alpha)
-            logomega[tt] <- min(0, logomega[tt-1] + alpha)
+            logbeta[tt] <- min(-.5, logbeta[tt-1] + alpha + (logbeta.init[tt] - logbeta.init[tt-1]))
+            logomega[tt] <- min(-.5, logomega[tt-1] + alpha + (logomega.init[tt] - logomega.init[tt-1]))
         } else if (dcc[tt-1] > dcc.true[tt-1]) {
-            logbeta[tt] <- logbeta[tt-1] - alpha
-            logomega[tt] <- logomega[tt-1]
+            logbeta[tt] <- logbeta[tt-1] - alpha + (logbeta.init[tt] - logbeta.init[tt-1])
+            logomega[tt] <- logomega[tt-1] + (logomega.init[tt] - logomega.init[tt-1])
         }
     }
 

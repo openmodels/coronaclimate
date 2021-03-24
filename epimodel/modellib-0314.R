@@ -25,7 +25,7 @@ data {
   vector[T-1] ddeaths_true;
 }
 transformed data {
-  real observed_true = sum(dobserved_true);
+  real observed_true = sum(dobserved_true - 1); // +1 when input
 }
 parameters {
   // parameters
@@ -106,7 +106,7 @@ transformed parameters {
     ii1[tt] = ii1[tt-1] + 2*ee2[tt-1]/invsigma - 2*ii1[tt-1]/invgamma;
     ii2[tt] = ii2[tt-1] + 2*ii1[tt-1]/invgamma - 2*ii2[tt-1]/invgamma;
 
-    qq[tt] = qq[tt-1] + new_ee1[tt-1] - qq[tt-1]/invkappa;
+    qq[tt] = qq[tt-1] + 2*ee1[tt-1]/invsigma - qq[tt-1]/invkappa;
 
     omega[tt-1] = exp(logomega[tt-1] + dowomegaeffect[1 + (tt % 7)] + dot_product(weather[tt-1], omegaeffect));
     rr[tt] = rr[tt-1] + omega[tt-1] * qq[tt-1]/invkappa - rr[tt-1]/invtheta;
@@ -127,7 +127,7 @@ model {
   total_prior ~ normal(effect + omegaeffect, total_prior_sd);
 
   // facts of the data
-  target += uniform_log(sum(omega .* dobserved_true / observed_true), observed_true / N, 1);
+  target += uniform_lpdf(sum(omega .* (dobserved_true - 1) / observed_true) | observed_true / N, 1);
 
   // hyperparameters
   eein ~ exponential(1 / eein_prior);
@@ -152,5 +152,19 @@ get.stan.model.nodice <- function() {
                 fixed("ddeaths_true ~ lognormal(log(ddeaths + 1), error);"), "")
 }
 
+drop.stan.model.prior <- function(model) {
+    str_replace(str_replace(str_replace(model, fixed("vector[K] total_prior;"), ""),
+                            fixed("vector<lower=0>[K] total_prior_sd;"), ""),
+                fixed("total_prior ~ normal(effect + omegaeffect, total_prior_sd);"), "")
+}
 
-
+drop.stan.model.weather <- function(model) {
+    model2 <- drop.stan.model.prior(model)
+    one <- str_replace(str_replace(str_replace(str_replace(str_replace(model2, fixed("int<lower=0> K; // # weather preds"), ""),
+                                                           fixed("matrix[T, K] weather;"), ""),
+                                               fixed("// effect of weather"), ""),
+                                   fixed("vector<lower=-.1, upper=.1>[K] effect;"), ""),
+                       fixed("vector<lower=-.1, upper=.1>[K] omegaeffect;"), "")
+    str_replace(str_replace(one, fixed(" + dot_product(weather[tt-1], effect)"), ""),
+                fixed(" + dot_product(weather[tt-1], omegaeffect)"), "")
+}

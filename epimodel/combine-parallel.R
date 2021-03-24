@@ -1,10 +1,13 @@
 outdir <- "../../results-saved"
+do.del <- F
 
 finals <- list()
 todelete <- c()
 
 for (filename in list.files(outdir)) {
    if (any(grep("-nodel.csv", filename)))
+     next
+   if (any(grep("-dynamics.csv", filename)))
      next
    print(filename)
    tryCatch({
@@ -22,11 +25,16 @@ for (filename in list.files(outdir)) {
 }
 
 for (filebase in names(finals)) {
-   outpath <- file.path(outdir, paste0(filebase, ".csv"))
-   write.csv(finals[[filebase]], outpath, row.names=F)
-   todelete <- todelete[todelete != outpath]
+    if (do.del)
+        outpath <- file.path(outdir, paste0(filebase, ".csv"))
+    else
+        outpath <- file.path(outdir, paste0(filebase, "-nodel.csv"))
+    write.csv(finals[[filebase]], outpath, row.names=F)
+    todelete <- todelete[todelete != outpath]
 }
 
-for (filepath in todelete) {
-  file.remove(filepath)
+if (do.del) {
+    for (filepath in todelete) {
+        file.remove(filepath)
+    }
 }

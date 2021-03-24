@@ -3,6 +3,10 @@ outdir <- "../../results"
 finals <- list()
 
 for (filename in list.files(outdir)) {
+   if (any(grep("-nodel.csv", filename)))
+     next
+   if (any(grep("-dynamics.csv", filename)))
+     next
    print(filename)
    tryCatch({
       df <- read.csv(file.path(outdir, filename))
