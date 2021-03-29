@@ -136,7 +136,7 @@ estimate.region <- function(subdfx, param, country, region) {
 
 ## allrecorded <- read.csv(outfile)
 allrecorded <- data.frame()
-for (param in unique(results$param)) {
+for (param in unique(results$param[!is.na(results$mu)])) {
     if (!(param %in% names(bounds)))
         next
 
@@ -165,13 +165,12 @@ for (param in unique(results$param)) {
         if (nrow(subdfx) > 1) {
             recorded.country <- estimate.region(subdfx, param, country, "")
             allrecorded <- rbind(allrecorded, recorded.country[-nrow(recorded.country),])
+            meta.subregions <- rbind(meta.subregions, recorded.country[nrow(recorded.country),])
         } else {
             allrecorded <- rbind(allrecorded, meta.sublocalities)
         }
 
         write.csv(allrecorded, outfile, row.names=F)
-
-        meta.subregions <- rbind(meta.subregions, recorded.country[nrow(recorded.country),])
     }
 
     recorded.global <- estimate.region(rbind(subset(subdf2, !(Country %in% has.subregions)),
