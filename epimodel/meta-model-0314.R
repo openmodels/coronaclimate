@@ -9,8 +9,8 @@ rstan_options(auto_write = TRUE)
 resultdir <- "results-saved"
 versions <- c('0314-full', '0314-noprior', '0314-noweather')
 suffix <- "-nodel"
-weights <- 'nobs' #c('nobs', 'pop', 'region')
-mobileonlys <- F #c(F, T)
+weights <- c('nobs', 'pop', 'region')
+mobileonlys <- c(F, T)
 code.version <- "1218"
 
 df <- read.csv("../../cases/panel_all.csv")

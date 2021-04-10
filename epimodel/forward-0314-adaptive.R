@@ -1,4 +1,4 @@
-forward <- function(data, params, extraeein) {
+forward.adaptive <- function(data, params, dcc.true) {
 ### Data:
 
     ## int<lower=0> T; // time periods
@@ -70,6 +70,8 @@ forward <- function(data, params, extraeein) {
     dcc <- rep(NA, data$T - 1)
     ddeaths <- rep(NA, data$T - 1)
 
+    extraeein <- rep(NA, data$T - 1)
+    
     ss[1] <- data$N;
     ee1[1] <- data$ii_init;
     ee2[1] <- data$ii_init;
@@ -80,7 +82,7 @@ forward <- function(data, params, extraeein) {
     for (tt in 2:data$T) {
         new_ee1[tt-1] <- exp(params$logbeta[tt-1] + doweffect[1 + (tt %% 7)] + sum(data$weather[tt-1,] * params$effect))*ss[tt-1]*(ii1[tt-1] + ii2[tt-1]) / data$N;
         ss[tt] <- ss[tt-1] - new_ee1[tt-1];
-        ee1[tt] <- max(0, ee1[tt-1] + new_ee1[tt-1] - 2*ee1[tt-1]/params$invsigma + params$eein[tt-1] + extraeein[tt-1]);
+        ee1[tt] <- ee1[tt-1] + new_ee1[tt-1] - 2*ee1[tt-1]/params$invsigma + params$eein[tt-1];
         ee2[tt] <- ee2[tt-1] + 2*ee1[tt-1]/params$invsigma - 2*ee2[tt-1]/params$invsigma;
         ii1[tt] <- ii1[tt-1] + 2*ee2[tt-1]/params$invsigma - 2*ii1[tt-1]/params$invgamma;
         ii2[tt] <- ii2[tt-1] + 2*ii1[tt-1]/params$invgamma - 2*ii2[tt-1]/params$invgamma;
@@ -92,26 +94,18 @@ forward <- function(data, params, extraeein) {
 
         dcc[tt-1] <- rr[tt-1]/params$invtheta;
         ddeaths[tt-1] <- (2*ii2[tt-1]/params$invgamma) * params$deathrate * exp(tt * params$deathlearning) * (omega[tt-1] + (1 - omega[tt-1]) * params$deathomegaplus);
+
+        if (is.na(dcc.true[tt-1]) || round(dcc[tt-1]) == round(dcc.true[tt-1])) {
+            extraeein[tt-1] <- 0
+        } else if (dcc[tt-1] < dcc.true[tt-1]) {
+            extraeein[tt-1] <- (dcc.true[tt-1] - dcc[tt-1]) / omega[tt-1]
+        } else if (dcc[tt-1] > dcc.true[tt-1]) {
+            extraeein[tt-1] <- max((dcc.true[tt-1] - dcc[tt-1]) / omega[tt-1], min(0, -ee1[tt]))
+        }
+
+        ## Correct ee1
+        ee1[tt] <- ee1[tt-1] + new_ee1[tt-1] - 2*ee1[tt-1]/params$invsigma + params$eein[tt-1] + extraeein[tt-1]
     }
 
-    ## return(list(ss=ss, new_ee1=new_ee1, ee1=ee1, ee2=ee2, ii1=ii1, ii2=ii2, qq=qq, rr=rr, omega=omega, dcc=dcc, ddeaths=ddeaths))
-    return(data.frame(TT=1:data$T, ss=ss, new_ee1=c(0, new_ee1), ee1=ee1, ee2=ee2, ii1=ii1, ii2=ii2, qq=qq, rr=rr, omega=c(0, omega), dcc=c(0, dcc), ddeaths=c(0, ddeaths)))
-}
-
-get.dlog <- function(data, params) {
-    outputs <- forward(data, params)
-    synthetic.base <- rep(0, 365)
-    for (ii in 2:365)
-        synthetic.base[ii] <- outputs$dcc[ii-1] + (1 - 1 / 8.1) * synthetic.base[ii-1]
-    diff(log(synthetic.base))
-}
-
-get.impresp <- function(baseline, pulsetime, params) {
-    weather <- matrix(0, 365, 1)
-    weather[pulsetime, 1] <- 1
-
-    data <- list(T=365, N=1, K=1, weather=weather, ii_init=1 / 10e6)
-
-    perturbed <- get.dlog(data, params)
-    perturbed - baseline
+    return(data.frame(TT=1:data$T, ss=ss, new_ee1=c(0, new_ee1), ee1=ee1, ee2=ee2, ii1=ii1, ii2=ii2, qq=qq, rr=rr, omega=c(0, omega), dcc=c(0, dcc), ddeaths=c(0, ddeaths), extraeein=c(extraeein, NA)))
 }
