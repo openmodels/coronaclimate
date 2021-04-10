@@ -29,7 +29,7 @@ for (ii in 1:nrow(cities)) {
     ridlevels <- data.frame(Country=c(rep(ridinfo$Country, 3), ""), Region=c(rep(ridinfo$Region, 2), rep("", 2)), Locality=c(ridinfo$Locality, rep("", 3)))
     ridlevels <- ridlevels[!duplicated(ridlevels),]
     rids <- paste(ridlevels$Country, ridlevels$Region, ridlevels$Locality)
-    
+
     subdf <- subset(df, regid == ridinfo$regid)
 
     for (global.params in c(F, T)) {
@@ -43,7 +43,7 @@ for (ii in 1:nrow(cities)) {
                     break
             }
         }
-        
+
         weather <- demeanlist(subdf[, weathervars], list(factor(rep('all', nrow(subdf))))) / t(matrix(weatherscales, ncol=nrow(subdf), nrow=length(weathervars)))
 
         for (dynregid in rids) {
@@ -65,7 +65,7 @@ for (ii in 1:nrow(cities)) {
             print("No dynamics found.")
             next
         }
-        
+
         params <- list(doweffect6=c(dynamics$doweffect[6:7], dynamics$doweffect[1:4]),
                        dowomegaeffect6=c(dynamics$dowomegaeffect[7:8], dynamics$dowomegaeffect[2:5]),
                        logbeta=dynamics$logbeta, logomega=dynamics$logomega[-1], eein=dynamics$eein[-1])
@@ -73,12 +73,12 @@ for (ii in 1:nrow(cities)) {
         for (param in c('invsigma', 'invgamma', 'invkappa', 'invtheta',
                         'deathrate', 'deathlearning', 'deathomegaplus'))
             params[[param]] <- subres$mu[subres$param == param]
-    
+
         params[['effect']] <- sapply(weathervars, function(var) subres$mu[subres$param == paste0('e.', var)])
         params[['omegaeffect']] <- sapply(weathervars, function(var) subres$mu[subres$param == paste0('o.', var)])
 
         data <- list(T=nrow(weather), N=subres$population[1], K=length(weathervars), weather=weather, ii_init=0)
-        
+
         withweather <- forward.adaptive(data, params, diff(subdf$Confirmed))
         withweather$dobserved_true <- c(0, diff(subdf$Confirmed))
 
@@ -88,7 +88,7 @@ for (ii in 1:nrow(cities)) {
 
         rsqr <- 1 - sum((withweather$dobserved_true - withweather$dcc)^2, na.rm=T) / sum(withweather$dobserved_true^2, na.rm=T)
         sumstats <- rbind(sumstats, data.frame(regid=ridinfo$regid, dynregid, paramregid, rsqr))
-        
+
         ## withweather2 <- forward(data, params, withweather$extraeein)
         ## withweather2$dobserved_true <- c(0, diff(subdf$Confirmed))
         ## ggplot(withweather2, aes(TT)) +
@@ -97,7 +97,7 @@ for (ii in 1:nrow(cities)) {
 
         data <- list(T=nrow(weather), N=subres$population[1], K=length(weathervars), weather=0 * weather, ii_init=0)
         baseline <- forward(data, params, withweather$extraeein)
-        
+
         subprojdf <- data.frame(regid=ridinfo$regid, dynregid, paramregid, global.params,
                                 cc0=cumsum(baseline$dcc), deaths0=cumsum(baseline$ddeaths),
                                 cc1=cumsum(withweather$dcc), deaths1=cumsum(withweather$ddeaths),
@@ -110,7 +110,7 @@ for (ii in 1:nrow(cities)) {
         ## ggplot(subprojdf, aes(time, dcc / max(maxcases, cc1, na.rm=T))) +
         ##     geom_line() + geom_hline(yintercept=0, colour='green') +
         ##     theme_bw() + xlab(NULL) + ylab("Additional reported portion of total cases") + scale_y_continuous(labels=scales::percent)
-        
+
         projdf <- rbind(projdf, subprojdf)
     }
 }
@@ -145,5 +145,32 @@ ggplot(subset(projdf.norm, !global.params)) +
     scale_x_date(expand=c(0, 0)) + scale_linetype_discrete(name="Calibration:", breaks=c(F, T), labels=c('Local parameters', 'Global parameters')) +
     theme_bw() + xlab(NULL) + ylab("Additional reported percent of total cases (relative to latitude)") +
     scale_colour_discrete(name="Region:")
+
+## Add in internal axes
+verticals <- data.frame()
+ticks <- data.frame()
+for (ii in 1:nrow(cities)) {
+    latitude <- cities$latitude[ii] * ifelse(cities$hemisphere[ii] == 'N', 1, -1)
+    ymin <- latitude - 100 * min(projdf.norm$dcc.norm)
+    ymax <- latitude - 100 * max(projdf.norm$dcc.norm)
+
+    date <- min(max(projdf.norm$date), verticals$date[verticals$ymin < ymax], verticals$date[verticals$ymax > ymin]) + 20
+    verticals <- rbind(verticals, data.frame(date, ymin, ymax))
+
+    values <- c(seq(0, 100 * max(projdf.norm$dcc.norm), by=5),
+                seq(0, 100 * min(projdf.norm$dcc.norm), by=-5)[-1])
+    ticks <- rbind(ticks, data.frame(y=latitude + values, date, values))
+}
+
+ggplot(subset(projdf.norm, !global.params)) +
+    geom_hline(aes(yintercept=latitude, colour=regid), linetype='dashed') +
+    geom_line(aes(date, latitude + 100 * dcc.norm, group=paste(regid, paramregid), colour=regid)) +
+    geom_label(data=cities, aes(as.Date('2020-02-01'), y=latitude * ifelse(hemisphere == 'N', 1, -1), label=Locality)) +
+    geom_segment(data=verticals, aes(x=date, xend=date, y=ymin, yend=ymax)) +
+    geom_segment(date=ticks, aes(x=date, xend=date+4, y=y, yend=y)) +
+    geom_text(date=ticks, aes(x=date+8, y=y, label=values), hjust=0) +
+    scale_x_date(expand=c(0, 0)) + scale_linetype_discrete(name="Calibration:", breaks=c(F, T), labels=c('Local parameters', 'Global parameters')) +
+    theme_bw() + xlab(NULL) + ylab("Additional reported percent of total cases (relative to latitude)") +
+    guides(colour=F)
 
 ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314.pdf", width=8, height=6)
