@@ -174,3 +174,55 @@ ggplot(subset(projdf.norm, !global.params)) +
     guides(colour=F)
 
 ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314.pdf", width=8, height=6)
+
+## Do all regions
+
+sumstats <- data.frame()
+for (regid in unique(results$regid[results$lowest_level == 1 & results$group == "Combined"])) {
+    subdf <- df[df$regid == regid,]
+    subres <- results[results$regid == regid & group == 'Combined',]
+    if (nrow(subres) == 22 || nrow(subres) == 21)
+        next
+
+    weather <- demeanlist(subdf[, weathervars], list(factor(rep('all', nrow(subdf))))) / t(matrix(weatherscales, ncol=nrow(subdf), nrow=length(weathervars)))
+
+    dynamics <- read.csv(paste0("../../results-saved/epimodel-", version, "-dynamics.csv-", regid))
+
+    params <- list(doweffect6=c(dynamics$doweffect[6:7], dynamics$doweffect[1:4]),
+                   dowomegaeffect6=c(dynamics$dowomegaeffect[7:8], dynamics$dowomegaeffect[2:5]),
+                   logbeta=dynamics$logbeta, logomega=dynamics$logomega[-1], eein=dynamics$eein[-1])
+
+    for (param in c('invsigma', 'invgamma', 'invkappa', 'invtheta',
+                    'deathrate', 'deathlearning', 'deathomegaplus'))
+        params[[param]] <- subres$mu[subres$param == param]
+
+    params[['effect']] <- sapply(weathervars, function(var) subres$mu[subres$param == paste0('e.', var)])
+    params[['omegaeffect']] <- sapply(weathervars, function(var) subres$mu[subres$param == paste0('o.', var)])
+
+    data <- list(T=nrow(weather), N=subres$population[1], K=length(weathervars), weather=weather, ii_init=0)
+
+    withweather <- forward.adaptive(data, params, diff(subdf$Confirmed))
+    withweather$dobserved_true <- c(0, diff(subdf$Confirmed))
+
+    rsqr <- 1 - sum((withweather$dobserved_true - withweather$dcc)^2, na.rm=T) / sum(withweather$dobserved_true^2, na.rm=T)
+
+    data <- list(T=nrow(weather), N=subres$population[1], K=length(weathervars), weather=0 * weather, ii_init=0)
+    baseline <- forward(data, params, withweather$extraeein)
+
+    subprojdf <- data.frame(regid,
+                            cc0=cumsum(baseline$dcc), deaths0=cumsum(baseline$ddeaths),
+                            cc1=cumsum(withweather$dcc), deaths1=cumsum(withweather$ddeaths),
+                            latitude=cities$latitude[ii] * ifelse(cities$hemisphere[ii] == 'N', 1, -1))
+    subprojdf$dcc <- subprojdf$cc1 - subprojdf$cc0
+    subprojdf$ddeaths <- subprojdf$deaths1 - subprojdf$deaths0
+    subprojdf$time <- 1:nrow(subprojdf)
+
+    population <- subres$population[1]
+    maxcases <- subdf$Confirmed[nrow(subdf)]
+    maxdeaths <- subdf$Deaths[nrow(subdf)]
+
+    subprojdf$dcc.norm <- subprojdf$dcc / max(maxcases, subprojdf$cc0, subprojdf$cc1, na.rm=T)
+    subprojdf$ddeaths.norm <- subprojdf$ddeaths / max(maxdeaths, subprojdf$deaths0, subprojdf$deaths1, na.rm=T)
+
+    sumstats <- rbind(sumstats, data.frame(regid, rsqr, population, maxcases, max.dcc.norm=max(subprojdf$dcc.norm, na.rm=T), min.dcc.norm=min(subprojdf$dcc.norm, na.rm=T), end.dcc.norm=tail(subprojdf$dcc.norm, 1), max.ddeaths.norm=max(subprojdf$ddeaths.norm, na.rm=T), min.ddeaths.norm=min(subprojdf$ddeaths.norm, na.rm=T), end.ddeaths.norm=tail(subprojdf$ddeaths.norm, 1)))
+}
