@@ -3,7 +3,7 @@ setwd("~/research/coronavirus/code/epimodel")
 library(dplyr)
 library(reshape2)
 
-dfout <- read.csv("../../results-saved/epimodel-0105noprior.csv")
+dfout <- read.csv("../../results-saved/epimodel-0314-noprior-nodel.csv")
 dfout$rank <- NA
 for (param in unique(dfout$param))
     dfout$rank[dfout$param == param] <- rank(dfout$mu[dfout$param == param])
@@ -21,6 +21,7 @@ dfgov <- subset(read.csv("~/Dropbox/Coronavirus and Climate/policy/governance_da
 dfgov2 <- dfgov %>% left_join(read.csv("~/Dropbox/Coronavirus and Climate/policy/governance_data/meta_countries.csv"), by=c('code'='id'))
 
 dfge <- read.csv("~/Dropbox/Coronavirus and Climate/governance/wgi_2019.csv")
+dfge$ge <- as.numeric(dfge$ge)
 
 df$ALPHA.3[df$ALPHA.3 == "" & df$Country == "Australia"] <- "AUS"
 df$ALPHA.3[df$ALPHA.3 == "" & df$Country == "Canada"] <- "CAN"
@@ -30,46 +31,61 @@ df2 <- df %>% filter(lowest_level == 1) %>% left_join(dfgov2, by=c('ALPHA.3'='is
 
 get.pattern <- function(param, subdf) {
     ## In levels
-    mod <- lm(mu ~ logarea + logpopden + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2 + incomeLevel, data=subdf)
-    rsqr <- summary(mod)$r.squared
+    mod <- lm(mu ~ logarea + logpopden + incomeLevel, data=subdf)
+    rsqr.precl <- summary(mod)$r.squared
     areave <- sum(anova(mod)[1, 2]) / sum(anova(mod)[, 2])
     popve <- sum(anova(mod)[2, 2]) / sum(anova(mod)[, 2])
     ##adminve <- sum(anova(mod)[3, 2]) / sum(anova(mod)[, 2])
-    climve <- sum(anova(mod)[3:12, 2]) / sum(anova(mod)[, 2])
-    incve <- sum(anova(mod)[13, 2]) / sum(anova(mod)[, 2])
+    incve <- sum(anova(mod)[3, 2]) / sum(anova(mod)[, 2])
     ##geove <- sum(anova(mod)[14:15, 2]) / sum(anova(mod)[, 2])
+    rss.precl <- sum(mod$residuals^2) # 6 coeff
+
+    mod <- lm(mu ~ logarea + logpopden + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2 + incomeLevel, data=subdf)
+    rsqr <- summary(mod)$r.squared
+    climve <- sum(anova(mod)[3:12, 2]) / sum(anova(mod)[, 2])
+    rss <- sum(mod$residuals^2) # 16 coeff
 
     mod <- lm(mu ~ logarea + logpopden + incomeLevel + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2 + ge, data=subdf)
     rsqr.ge <- summary(mod)$r.squared
+    rss.ge <- sum(mod$residuals^2) # 17 coeff
 
     mod <- lm(mu ~ logarea + logpopden + incomeLevel + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2 + ge + reform + local + power_govern + hope_young + coordination + confidence + respect_law, data=subdf)
     rsqr.gov <- summary(mod)$r.squared
+    rss.gov <- sum(mod$residuals^2) # 24 coeff
 
     mod <- lm(mu ~ factor(Country) + logarea + logpopden + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2, data=subdf)
     rsqr.fe <- summary(mod)$r.squared
+    rss.fe <- sum(mod$residuals^2) # 167 coeff
 
-    row1 <- data.frame(param, values='levels', rsqr, areave, popve, incve, climve, geve=rsqr.ge - rsqr, govve=rsqr.gov - rsqr.ge, countryve=rsqr.fe - rsqr.gov)
+    row1 <- data.frame(param, values='levels', rsqr, areave, popve, incve, climve, geve=rsqr.ge - rsqr, govve=rsqr.gov - rsqr.ge, countryve=rsqr.fe - rsqr.gov, rss.precl, rss, rss.ge, rss.gov, rss.fe)
 
     ## In ranks
-    mod <- lm(rank ~ logarea + logpopden + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2 + incomeLevel, data=subdf)
-    rsqr <- summary(mod)$r.squared
+    mod <- lm(rank ~ logarea + logpopden + incomeLevel, data=subdf)
+    rsqr.precl <- summary(mod)$r.squared
     areave <- sum(anova(mod)[1, 2]) / sum(anova(mod)[, 2])
     popve <- sum(anova(mod)[2, 2]) / sum(anova(mod)[, 2])
     ##adminve <- sum(anova(mod)[3, 2]) / sum(anova(mod)[, 2])
-    climve <- sum(anova(mod)[3:12, 2]) / sum(anova(mod)[, 2])
-    incve <- sum(anova(mod)[13, 2]) / sum(anova(mod)[, 2])
+    incve <- sum(anova(mod)[3, 2]) / sum(anova(mod)[, 2])
     ##geove <- sum(anova(mod)[14:15, 2]) / sum(anova(mod)[, 2])
+    rss.precl <- sum(mod$residuals^2) # 6 coeff
+
+    mod <- lm(rank ~ logarea + logpopden + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2 + incomeLevel, data=subdf)
+    climve <- sum(anova(mod)[3:12, 2]) / sum(anova(mod)[, 2])
+    rss <- sum(mod$residuals^2) # 16 coeff
 
     mod <- lm(rank ~ logarea + logpopden + incomeLevel + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2 + ge, data=subdf)
     rsqr.ge <- summary(mod)$r.squared
+    rss.ge <- sum(mod$residuals^2) # 17 coeff
 
     mod <- lm(rank ~ logarea + logpopden + incomeLevel + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2 + ge + reform + local + power_govern + hope_young + coordination + confidence + respect_law, data=subdf)
     rsqr.gov <- summary(mod)$r.squared
+    rss.gov <- sum(mod$residuals^2) # 24 coeff
 
     mod <- lm(rank ~ factor(Country) + logarea + logpopden + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2, data=subdf)
     rsqr.fe <- summary(mod)$r.squared
+    rss.fe <- sum(mod$residuals^2) # 167 coeff
 
-    row2 <- data.frame(param, values='ranks', rsqr, areave, popve, incve, climve, geve=rsqr.ge - rsqr, govve=rsqr.gov - rsqr.ge, countryve=rsqr.fe - rsqr.gov)
+    row2 <- data.frame(param, values='ranks', rsqr, areave, popve, incve, climve, geve=rsqr.ge - rsqr, govve=rsqr.gov - rsqr.ge, countryve=rsqr.fe - rsqr.gov, rss.precl, rss, rss.ge, rss.gov, rss.fe)
 
     rbind(row1, row2)
 }
@@ -88,7 +104,7 @@ patterns <- rbind(patterns, get.pattern('rhat', subdf))
 
 library(ggplot2)
 
-patterns2 <- subset(melt(patterns, id.vars=c('param', 'values')), variable != 'rsqr')
+patterns2 <- subset(melt(patterns, id.vars=c('param', 'values')), !(variable %in% c('rsqr', 'rss.precl', 'rss', 'rss.ge', 'rss.gov', 'rss.fe')))
 patterns2$label <- NA
 patterns2$label[patterns2$variable == 'areave'] <- "Area"
 patterns2$label[patterns2$variable == 'popve'] <- "Pop. Density"
@@ -96,8 +112,8 @@ patterns2$label[patterns2$variable == 'adminve'] <- "Implausible Flag"
 patterns2$label[patterns2$variable == 'climve'] <- "Climate (quadratics)"
 patterns2$label[patterns2$variable == 'incve'] <- "Income level (Country)"
 patterns2$label[patterns2$variable == 'geove'] <- "Geography (Country)"
-patterns2$label[patterns2$variable == 'geve'] <- "Effectiveness (Country)"
-patterns2$label[patterns2$variable == 'govve'] <- "Other country-specific" #"Governance (Country)"
+patterns2$label[patterns2$variable == 'geve'] <- "Governance (Country)" #"Effectiveness (Country)"
+patterns2$label[patterns2$variable == 'govve'] <- "Governance (Country)" #"Other country-specific"
 patterns2$label[patterns2$variable == 'countryve'] <- "Other country-specific"
 patterns2$label <- factor(patterns2$label, levels=rev(c("Area", "Pop. Density", "Lowest Level Flag", "Implausible Flag", "Climate (quadratics)", "Income level (Country)", "Geography (Country)", "Effectiveness (Country)", "Governance (Country)", "Other country-specific")))
 
@@ -110,7 +126,7 @@ ggplot(patterns2, aes(param.label, value, fill=label)) +
     coord_flip() + xlab(NULL) + ylab("Explained variance") +
     geom_col() + scale_y_continuous(labels=scales::percent) +
     scale_fill_discrete(name="Source of variance:", breaks=c("Area", "Pop. Density", "Lowest Level Flag", "Implausible Flag", "Climate (quadratics)", "Income level (Country)", "Geography (Country)", "Effectiveness (Country)", "Governance (Country)", "Other country-specific")) + theme_bw()
-ggsave("climatevar-0105.pdf", width=10, height=5)
+ggsave("climatevar-0314.pdf", width=10, height=5)
 
 patterns %>% group_by(values) %>% summarize(rsqr=mean(rsqr),
                                             areave=mean(areave),
@@ -122,6 +138,25 @@ patterns %>% group_by(values) %>% summarize(rsqr=mean(rsqr),
                                             geve=mean(geve),
                                             govve=mean(govve),
                                             countryve=mean(countryve))
+
+paramsets <- list('trans'=c('invsigma', 'invgamma', 'mobility_slope', 'logbeta'),
+                  'detect'=c('invkappa', 'invtheta', 'logomega'),
+                  'deaths'=c('deathrate', 'deathlearning', 'deathomegaplus'),
+                  'trans.weather'=c("e.t2m", "e.tp", "e.ssrd", "e.utci"),
+                  'detect.weather'=c("o.t2m", "o.tp", "o.ssrd", "o.utci"))
+
+fstats <- data.frame()
+for (group in names(paramsets)) {
+    ## Channel: Climate
+    fstat.clim <- mean(((patterns$rss.precl[patterns$param %in% paramsets[[group]]] - patterns$rss[patterns$param %in% paramsets[[group]]]) / 10) / (patterns$rss[patterns$param %in% paramsets[[group]]] / (sum(df2$param == 'alpha') - 16)))
+    ## Channel: Governance
+    fstat.gov <- mean(((patterns$rss[patterns$param %in% paramsets[[group]]] - patterns$rss.gov[patterns$param %in% paramsets[[group]]]) / 8) / (patterns$rss.gov[patterns$param %in% paramsets[[group]]] / (sum(df2$param == 'alpha') - 24)))
+    fstats <- rbind(fstats, data.frame(group, fstat.clim, fstat.gov))
+}
+
+fstats$pvals.clim <- (1 - pf(fstats$fstat.clim, 10, sum(df2$param == 'alpha') - 16))
+fstats$pvals.gov <- (1 - pf(fstats$fstat.gov, 8, sum(df2$param == 'alpha') - 24))
+
 
 ## tree <- rpart(mu ~ population + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2, data=subset(df,
 
