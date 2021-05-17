@@ -1,4 +1,4 @@
-outdirs <- c("../../oldresults", "../../results")
+outdirs <- c("../../results")
 
 allrhats <- list()
 

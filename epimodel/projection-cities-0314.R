@@ -151,37 +151,46 @@ verticals <- data.frame()
 ticks <- data.frame()
 for (ii in 1:nrow(cities)) {
     latitude <- cities$latitude[ii] * ifelse(cities$hemisphere[ii] == 'N', 1, -1)
-    ymin <- latitude - 100 * min(projdf.norm$dcc.norm)
-    ymax <- latitude - 100 * max(projdf.norm$dcc.norm)
+    rows <- which(projdf.norm$latitude == latitude & !projdf.norm$global.params)
+    ymin <- latitude + 100 * min(projdf.norm$dcc.norm[rows], na.rm=T)
+    ymax <- latitude + 100 * max(projdf.norm$dcc.norm[rows], na.rm=T)
 
-    date <- min(max(projdf.norm$date), verticals$date[verticals$ymin < ymax], verticals$date[verticals$ymax > ymin]) + 20
-    verticals <- rbind(verticals, data.frame(date, ymin, ymax))
+    ##date <- max(max(projdf.norm$date) - 10, verticals$date[verticals$ymin < ymax + 10 & verticals$ymax > ymin - 10]) + 22
+    for (date in as.character(seq(max(projdf.norm$date) + 12, by=22, length.out=10))) {
+        date <- as.Date(date)
+        if (!any(verticals$date == date & verticals$ymin < ymax + 10 & verticals$ymax > ymin - 10))
+            break
+    }
+    verticals <- rbind(verticals, data.frame(date, latitude, ymin, ymax, topval=ymax - latitude, botval=ymin - latitude))
 
-    values <- c(seq(0, 100 * max(projdf.norm$dcc.norm), by=5),
-                seq(0, 100 * min(projdf.norm$dcc.norm), by=-5)[-1])
-    ticks <- rbind(ticks, data.frame(y=latitude + values, date, values))
+    values <- c(seq(0, 100 * max(projdf.norm$dcc.norm[rows], na.rm=T), by=10),
+                seq(0, 100 * min(projdf.norm$dcc.norm[rows], na.rm=T), by=-10)[-1])
+    ticks <- rbind(ticks, data.frame(y=latitude + values, date, values, latitude))
 }
 
 ggplot(subset(projdf.norm, !global.params)) +
-    geom_hline(aes(yintercept=latitude, colour=regid), linetype='dashed') +
-    geom_line(aes(date, latitude + 100 * dcc.norm, group=paste(regid, paramregid), colour=regid)) +
+    geom_segment(data=verticals, aes(x=as.Date('2020-01-01'), xend=date, y=latitude, yend=latitude, colour=factor(latitude)), linetype='dashed') +
+    geom_line(aes(date, latitude + 100 * dcc.norm, group=paste(regid, paramregid), colour=factor(latitude))) +
     geom_label(data=cities, aes(as.Date('2020-02-01'), y=latitude * ifelse(hemisphere == 'N', 1, -1), label=Locality)) +
-    geom_segment(data=verticals, aes(x=date, xend=date, y=ymin, yend=ymax)) +
-    geom_segment(date=ticks, aes(x=date, xend=date+4, y=y, yend=y)) +
-    geom_text(date=ticks, aes(x=date+8, y=y, label=values), hjust=0) +
+    geom_segment(data=verticals, aes(x=date, xend=date, y=ymin, yend=ymax, colour=factor(latitude))) +
+    geom_segment(data=ticks, aes(x=date, xend=date+4, y=y, yend=y, colour=factor(latitude))) +
+    geom_text(data=subset(ticks, values == 0), aes(x=date+6, y=y, label=values), hjust=0) +
+    geom_text(data=subset(verticals, round(botval) != 0), aes(x=date, y=ymin - 2, label=paste0(round(botval), "%"))) +
+    geom_text(data=subset(verticals, round(topval) != 0), aes(x=date, y=ymax + 2, label=paste0(round(topval), "%"))) +
     scale_x_date(expand=c(0, 0)) + scale_linetype_discrete(name="Calibration:", breaks=c(F, T), labels=c('Local parameters', 'Global parameters')) +
     theme_bw() + xlab(NULL) + ylab("Additional reported percent of total cases (relative to latitude)") +
-    guides(colour=F)
+    guides(colour=F) + coord_cartesian(xlim=c(as.Date("2020-01-01"), as.Date("2020-12-31")), clip="off") + theme(plot.margin=margin(5, 150, 5, 5, "pt"))
 
-ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314.pdf", width=8, height=6)
+ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314.pdf", width=9, height=6)
 
 ## Do all regions
 
 sumstats <- data.frame()
 for (regid in unique(results$regid[results$lowest_level == 1 & results$group == "Combined"])) {
+    print(regid)
     subdf <- df[df$regid == regid,]
-    subres <- results[results$regid == regid & group == 'Combined',]
-    if (nrow(subres) == 22 || nrow(subres) == 21)
+    subres <- results[results$regid == regid & results$group == 'Combined',]
+    if (nrow(subres) != 22 && nrow(subres) != 21)
         next
 
     weather <- demeanlist(subdf[, weathervars], list(factor(rep('all', nrow(subdf))))) / t(matrix(weatherscales, ncol=nrow(subdf), nrow=length(weathervars)))
@@ -224,5 +233,56 @@ for (regid in unique(results$regid[results$lowest_level == 1 & results$group == 
     subprojdf$dcc.norm <- subprojdf$dcc / max(maxcases, subprojdf$cc0, subprojdf$cc1, na.rm=T)
     subprojdf$ddeaths.norm <- subprojdf$ddeaths / max(maxdeaths, subprojdf$deaths0, subprojdf$deaths1, na.rm=T)
 
-    sumstats <- rbind(sumstats, data.frame(regid, rsqr, population, maxcases, max.dcc.norm=max(subprojdf$dcc.norm, na.rm=T), min.dcc.norm=min(subprojdf$dcc.norm, na.rm=T), end.dcc.norm=tail(subprojdf$dcc.norm, 1), max.ddeaths.norm=max(subprojdf$ddeaths.norm, na.rm=T), min.ddeaths.norm=min(subprojdf$ddeaths.norm, na.rm=T), end.ddeaths.norm=tail(subprojdf$ddeaths.norm, 1)))
+    sumstats <- rbind(sumstats, data.frame(regid, rsqr, population, maxcases, max.dcc.norm=max(subprojdf$dcc.norm, na.rm=T), min.dcc.norm=min(subprojdf$dcc.norm, na.rm=T), end.dcc.norm=tail(subprojdf$dcc.norm, 1), max.ddeaths.norm=max(subprojdf$ddeaths.norm, na.rm=T), min.ddeaths.norm=min(subprojdf$ddeaths.norm, na.rm=T), end.ddeaths.norm=tail(subprojdf$ddeaths.norm, 1), var.dcc0=var(baseline$dcc / max(maxcases, subprojdf$cc0, subprojdf$cc1, na.rm=T), na.rm=T), var.dcc1=var(withweather$dcc / max(maxcases, subprojdf$cc0, subprojdf$cc1, na.rm=T), na.rm=T)))
 }
+
+library(Hmisc)
+mean(sumstats$var.dcc1) / mean(sumstats$var.dcc0)
+wtd.mean(sumstats$var.dcc1, sumstats$population) / wtd.mean(sumstats$var.dcc0, sumstats$population)
+
+ggplot(sumstats) +
+    geom_histogram(aes(max.dcc.norm, y=..density.., weight=population, fill='Maximum')) + geom_histogram(aes(min.dcc.norm, y=..density.., weight=population, fill='Minimum'))
+
+sumstats$ext.dcc.norm <- sumstats$max.dcc.norm
+sumstats$ext.dcc.norm[-sumstats$min.dcc.norm > sumstats$ext.dcc.norm] <- sumstats$min.dcc.norm[-sumstats$min.dcc.norm > sumstats$ext.dcc.norm]
+
+sumstats$ext.ddeaths.norm <- sumstats$max.ddeaths.norm
+sumstats$ext.ddeaths.norm[-sumstats$min.ddeaths.norm > sumstats$ext.ddeaths.norm] <- sumstats$min.ddeaths.norm[-sumstats$min.ddeaths.norm > sumstats$ext.ddeaths.norm]
+
+sumstats$bin <- round(2 * sumstats$ext.dcc.norm, 1) / 2
+sumstats.ext.dcc <- sumstats %>% group_by(bin) %>% dplyr::summarize(stat='Extreme Cases', dpop=sum(population))
+sumstats$bin <- round(2 * sumstats$end.dcc.norm, 1) / 2
+sumstats.end.dcc <- sumstats %>% group_by(bin) %>% summarize(stat='Year-end Cases', dpop=sum(population))
+sumstats$bin <- round(2 * sumstats$ext.ddeaths.norm, 1) / 2
+sumstats.ext.ddeaths <- sumstats %>% group_by(bin) %>% summarize(stat='Extreme Deaths', dpop=sum(population))
+sumstats$bin <- round(2 * sumstats$end.ddeaths.norm, 1) / 2
+sumstats.end.ddeaths <- sumstats %>% group_by(bin) %>% summarize(stat='Year-end Deaths', dpop=sum(population))
+
+sumstats.agg <- rbind(sumstats.ext.dcc, sumstats.end.dcc, sumstats.ext.ddeaths, sumstats.end.ddeaths)
+
+ggplot(sumstats.agg) +
+    facet_wrap(~ stat, ncol=2, nrow=2, scales="free_y") +
+    geom_col(aes(-bin, dpop)) + # flip sign, so it's cc0 - cc1, consistent with normalization
+    scale_x_continuous(expand=c(0, 0), labels=scales::percent) + scale_y_continuous(expand=expansion(mult=c(0, .05))) +
+    theme_bw() + xlab("Change in the absence of weather variation") +
+    ylab("Populations of regions affected")
+
+ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314-hists.pdf", width=9, height=6)
+
+sumstats$bin <- round(4 * sumstats$max.dcc.norm, 1) / 4
+sumstats.max.dcc <- sumstats %>% group_by(bin) %>% dplyr::summarize(stat='Maximum Cases Change', dpop=sum(population))
+sumstats$bin <- round(4 * sumstats$max.ddeaths.norm, 1) / 4
+sumstats.max.ddeaths <- sumstats %>% group_by(bin) %>% dplyr::summarize(stat='Maximum Deaths Change', dpop=sum(population))
+
+sumstats.agg <- rbind(sumstats.max.dcc, sumstats.max.ddeaths)
+
+ggplot(sumstats.agg) +
+    facet_wrap(~ stat, nrow=1, scales="free_y") +
+    geom_col(aes(bin, dpop)) +
+    scale_x_continuous(expand=c(0, 0), labels=scales::percent) + scale_y_continuous(expand=expansion(mult=c(0, .05))) +
+    theme_bw() + xlab("Change relative to constant weather") +
+    ylab("Populations of regions affected")
+
+ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314-maxhists.pdf", width=9, height=3)
+
+sum(sumstats$population[sumstats$max.dcc.norm > .21]) / sum(sumstats$population)

@@ -3,7 +3,7 @@ setwd("~/research/coronavirus/code/epimodel")
 library(dplyr)
 library(reshape2)
 
-dfout <- read.csv("../../results-saved/epimodel-0314-noprior-nodel.csv")
+dfout <- read.csv("../../results/epimodel-0314-noprior-nodel.csv")
 dfout$rank <- NA
 for (param in unique(dfout$param))
     dfout$rank[dfout$param == param] <- rank(dfout$mu[dfout$param == param])
@@ -70,6 +70,7 @@ get.pattern <- function(param, subdf) {
     rss.precl <- sum(mod$residuals^2) # 6 coeff
 
     mod <- lm(rank ~ logarea + logpopden + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2 + incomeLevel, data=subdf)
+    rsqr <- summary(mod)$r.squared
     climve <- sum(anova(mod)[3:12, 2]) / sum(anova(mod)[, 2])
     rss <- sum(mod$residuals^2) # 16 coeff
 
@@ -132,12 +133,36 @@ patterns %>% group_by(values) %>% summarize(rsqr=mean(rsqr),
                                             areave=mean(areave),
                                             popve=mean(popve),
                                             incve=mean(incve),
-                                            adminve=mean(adminve),
+                                            ##adminve=mean(adminve),
                                             climve=mean(climve),
-                                            geove=mean(geove),
+                                            ##geove=mean(geove),
                                             geve=mean(geve),
                                             govve=mean(govve),
                                             countryve=mean(countryve))
+
+## Calculate f-tests
+
+get.pattern.full <- function(param, subdf) {
+    mod <- lm(mu ~ factor(Country) + logarea + logpopden, data=subdf)
+    rss.fenocl <- sum(mod$residuals^2) # 157 coeff
+
+    mod <- lm(mu ~ factor(Country) + logarea + logpopden + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2, data=subdf)
+    rss.fewicl <- sum(mod$residuals^2) # 167 coeff
+
+    mod <- lm(mu ~ logarea + logpopden + incomeLevel + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2, data=subdf)
+    rss.nogov <- sum(mod$residuals^2) # 14 coeff
+
+    mod <- lm(mu ~ logarea + logpopden + incomeLevel + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2 + ge + reform + local + power_govern + hope_young + coordination + confidence + respect_law, data=subdf)
+    rss.wigov <- sum(mod$residuals^2) # 22 coeff
+
+    data.frame(param, rss.fenocl, rss.fewicl, rss.nogov, rss.wigov, rss.error=sum(subdf$sd^2))
+}
+
+patterns <- data.frame()
+for (param in unique(df2$param)) {
+    subdf <- df2[df2$param == param,]
+    patterns <- rbind(patterns, get.pattern.full(param, subdf))
+}
 
 paramsets <- list('trans'=c('invsigma', 'invgamma', 'mobility_slope', 'logbeta'),
                   'detect'=c('invkappa', 'invtheta', 'logomega'),
@@ -148,14 +173,14 @@ paramsets <- list('trans'=c('invsigma', 'invgamma', 'mobility_slope', 'logbeta')
 fstats <- data.frame()
 for (group in names(paramsets)) {
     ## Channel: Climate
-    fstat.clim <- mean(((patterns$rss.precl[patterns$param %in% paramsets[[group]]] - patterns$rss[patterns$param %in% paramsets[[group]]]) / 10) / (patterns$rss[patterns$param %in% paramsets[[group]]] / (sum(df2$param == 'alpha') - 16)))
+    fstat.clim <- mean(((patterns$rss.fenocl - patterns$rss.fewicl)[patterns$param %in% paramsets[[group]]] / 10) / ((patterns$rss.fewicl + patterns$rss.error)[patterns$param %in% paramsets[[group]]] / (sum(df2$param == 'alpha') - 167)))
     ## Channel: Governance
-    fstat.gov <- mean(((patterns$rss[patterns$param %in% paramsets[[group]]] - patterns$rss.gov[patterns$param %in% paramsets[[group]]]) / 8) / (patterns$rss.gov[patterns$param %in% paramsets[[group]]] / (sum(df2$param == 'alpha') - 24)))
+    fstat.gov <- mean(((patterns$rss.nogov - patterns$rss.wigov)[patterns$param %in% paramsets[[group]]] / 8) / ((patterns$rss.wigov + patterns$rss.error)[patterns$param %in% paramsets[[group]]] / (sum(df2$param == 'alpha') - 22)))
     fstats <- rbind(fstats, data.frame(group, fstat.clim, fstat.gov))
 }
 
-fstats$pvals.clim <- (1 - pf(fstats$fstat.clim, 10, sum(df2$param == 'alpha') - 16))
-fstats$pvals.gov <- (1 - pf(fstats$fstat.gov, 8, sum(df2$param == 'alpha') - 24))
+fstats$pvals.clim <- (1 - pf(fstats$fstat.clim, 10, sum(df2$param == 'alpha') - 167))
+fstats$pvals.gov <- (1 - pf(fstats$fstat.gov, 8, sum(df2$param == 'alpha') - 22))
 
 
 ## tree <- rpart(mu ~ population + absh + absh2 + ssrd + ssrd2 + t2m + t2m2 + tp + tp2 + utci + utci2, data=subset(df,

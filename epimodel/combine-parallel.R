@@ -1,4 +1,4 @@
-outdir <- "../../results-saved"
+outdir <- "../../results"
 do.del <- F
 
 finals <- list()
