@@ -5,9 +5,9 @@ library(ggplot2)
 library(scales)
 library(PBSmapping)
 
-outfile <- "../../results/epimodel-meta-1217-all-nobs.csv"
-outfile.mob <- "../../results/epimodel-meta-1217-mobile-nobs.csv"
-suffix <- "-1217-all"
+outfile <- "../../results/epimodel-meta-0314-full-all-nobs-nodel.csv"
+outfile.mob <- "../../results/epimodel-meta-0314-full-mobile-nobs-nodel.csv"
+suffix <- "-0314-all"
 
 do.old.figures <- F
 

@@ -38,13 +38,13 @@ if (F) {
                 dynamics <- data.frame(logbeta=cumsum(rnorm(365)), logomega=c(NA, cumsum(rnorm(364))))
             else
                 dynamics <- data.frame(logbeta=cumsum(rnorm(365)) + sin(2 * pi * (1:365) / 365), logomega=c(NA, cumsum(rnorm(364))) + sin(2 * pi * (1:365) / 365))
-            write.csv(dynamics, paste0("../../results-saved/epimodel-meta-", version, "-noprior-dynamics.csv-", regid), row.names=F)
+            write.csv(dynamics, paste0("../../results/epimodel-meta-", version, "-noprior-dynamics.csv-", regid), row.names=F)
         }
 
         if (do.weather)
-            write.csv(results, paste0("../../results-saved/epimodel-meta-", version, "-noprior-all-nobs-nodel.csv"), row.names=F)
+            write.csv(results, paste0("../../results/epimodel-meta-", version, "-noprior-all-nobs-nodel.csv"), row.names=F)
         else
-            write.csv(results, paste0("../../results-saved/epimodel-meta-", version, "-noweather-all-nobs-nodel.csv"), row.names=F)
+            write.csv(results, paste0("../../results/epimodel-meta-", version, "-noweather-all-nobs-nodel.csv"), row.names=F)
     }
 }
 
@@ -52,8 +52,8 @@ if (F) {
 ## Compare noweather to noprior: Is error less?
 
 ## Version 1
-results.np <- subset(read.csv(paste0("../../results-saved/epimodel-meta-", version, "-noprior-all-nobs-nodel.csv")), group == "Raw" & param == 'error')
-results.nw <- subset(read.csv(paste0("../../results-saved/epimodel-meta-", version, "-noweather-all-nobs-nodel.csv")), group == "Raw" & param == 'error')
+results.np <- subset(read.csv(paste0("../../results/epimodel-meta-", version, "-noprior-all-nobs-nodel.csv")), group == "Raw" & param == 'error')
+results.nw <- subset(read.csv(paste0("../../results/epimodel-meta-", version, "-noweather-all-nobs-nodel.csv")), group == "Raw" & param == 'error')
 
 draws.np <- results.np[, c('regid', "ci2.5","ci25","ci50","ci75","ci97.5")]
 draws.nw <- results.nw[, c('regid', "ci2.5","ci25","ci50","ci75","ci97.5")]
@@ -75,8 +75,8 @@ fstat <- ((draws.np2$rss1 - draws.np2$rss2) / df1) / (draws.np2$rss2 / df2)
 pval.weather2 <- mean(1 - pf(fstat, df1, df2), na.rm=T)
 
 ## Version 2
-results.np <- subset(read.csv(paste0("../../results-saved/epimodel-meta-", version, "-noprior-all-nobs-nodel.csv")), group == "Combined" & regid == '  ' & param == 'error')
-results.nw <- subset(read.csv(paste0("../../results-saved/epimodel-meta-", version, "-noweather-all-nobs-nodel.csv")), group == "Combined" & regid == '  ' &  param == 'error')
+results.np <- subset(read.csv(paste0("../../results/epimodel-meta-", version, "-noprior-all-nobs-nodel.csv")), group == "Combined" & regid == '  ' & param == 'error')
+results.nw <- subset(read.csv(paste0("../../results/epimodel-meta-", version, "-noweather-all-nobs-nodel.csv")), group == "Combined" & regid == '  ' &  param == 'error')
 
 ## Error considerably less with no weather
 
@@ -86,7 +86,7 @@ results.nw <- subset(read.csv(paste0("../../results-saved/epimodel-meta-", versi
 do.set <- "Combined"
 
 for (prefix in c('e.', 'o.')) {
-    results <- subset(read.csv(paste0("../../results-saved/epimodel-meta-", version, "-noprior-all-nobs-nodel.csv")), group == do.set & param %in% paste0(prefix, weathervars))
+    results <- subset(read.csv(paste0("../../results/epimodel-meta-", version, "-noprior-all-nobs-nodel.csv")), group == do.set & param %in% paste0(prefix, weathervars))
 
     alldraws <- c()
     for (regid in unique(results$regid)) {
@@ -110,13 +110,13 @@ pval.weather.detect
 
 ## 3. Behaviour affects transmission/detection
 ## Null hypothesis: logomega and logbeta are random walk.
-results <- read.csv(paste0("../../results-saved/epimodel-meta-", version, "-noprior-all-nobs-nodel.csv"))
-regids <- unique(results$regid[results$group == 'Raw'])
+results <- read.csv(paste0("../../results/epimodel-", version, "-noprior-nodel.csv"))
+regids <- unique(results$regid)
 
 logbeta.pvals <- c()
 logomega.pvals <- c()
 for (regid in regids) {
-    dynpath <- paste0("../../results-saved/epimodel-", version, "-noprior-dynamics.csv-", regid)
+    dynpath <- paste0("../../results/epimodel-", version, "-noprior-dynamics.csv-", regid)
     if (!file.exists(dynpath))
         next
 
@@ -135,6 +135,14 @@ for (regid in regids) {
 
 pval.behave.trans <- mean(logbeta.pvals, na.rm=T) # failed in non-null
 pval.behave.detect <- mean(logomega.pvals, na.rm=T) # failed in non-null
+
+library(ggplot2)
+
+ggplot(data.frame(pval=c(pval.behave.trans, pval.behave.detect),
+                  var=rep(c('log(beta)', 'log(gamma)'), each=length(pval.behave.trans))),
+       aes(pval)) +
+    facet_wrap(~ var) + geom_histogram() +
+    scale_x_log10()
 
 ## 4. Governance/climate affects parameters
 ## Null hypothesis: Parameters not explained by governance/climate

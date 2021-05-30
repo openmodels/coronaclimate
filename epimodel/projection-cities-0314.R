@@ -11,7 +11,7 @@ source("forward-0314-adaptive.R")
 
 cities <- read.csv("major_cities_selection.csv")
 
-results <- read.csv(paste0("../../results-saved/epimodel-meta-", version, "-all-nobs-nodel.csv"))
+results <- read.csv(paste0("../../results/epimodel-meta-", version, "-all-nobs-nodel.csv"))
 
 df <- read.csv("../../cases/panel_all.csv")
 df$regid <- paste(df$Country, df$Region, df$Locality)
@@ -47,7 +47,7 @@ for (ii in 1:nrow(cities)) {
         weather <- demeanlist(subdf[, weathervars], list(factor(rep('all', nrow(subdf))))) / t(matrix(weatherscales, ncol=nrow(subdf), nrow=length(weathervars)))
 
         for (dynregid in rids) {
-            dynamic.paths <- Sys.glob(paste0("../../results-saved/epimodel-", version, "-dynamics.csv-", gsub(" +$", "*", dynregid)))
+            dynamic.paths <- Sys.glob(paste0("../../results/epimodel-", version, "-dynamics.csv-", gsub(" +$", "*", dynregid)))
             if (length(dynamic.paths) > 0) {
                 dynamics <- NULL
                 for (dynamic.path in dynamic.paths) {
@@ -77,7 +77,7 @@ for (ii in 1:nrow(cities)) {
         params[['effect']] <- sapply(weathervars, function(var) subres$mu[subres$param == paste0('e.', var)])
         params[['omegaeffect']] <- sapply(weathervars, function(var) subres$mu[subres$param == paste0('o.', var)])
 
-        data <- list(T=nrow(weather), N=subres$population[1], K=length(weathervars), weather=weather, ii_init=0)
+        data <- list(T=nrow(weather), N=subdf$population[1], K=length(weathervars), weather=weather, ii_init=0)
 
         withweather <- forward.adaptive(data, params, diff(subdf$Confirmed))
         withweather$dobserved_true <- c(0, diff(subdf$Confirmed))
@@ -119,16 +119,17 @@ library(ggplot2)
 
 projdf$date <- as.Date("2020-01-01") + projdf$time - 1
 
-projdf.norm <- projdf %>% group_by(regid, paramregid) %>% summarize(global.params, date=date, latitude=latitude, dcc.norm=dcc / max(maxcases, cc0, cc1, na.rm=T))
+projdf.norm <- projdf %>% group_by(regid, paramregid) %>% summarize(global.params, date=date, latitude=latitude, dcc.norm=pmax(dcc / maxcases, -1)) #, cc0, cc1, na.rm=T))
 
-ggplot(projdf.norm, aes(date, dcc.norm, linetype=paramregid == '  ')) +
+gp <- ggplot(projdf.norm[projdf.norm$global.params == F,], aes(date, dcc.norm, linetype=paramregid == '  ')) +
     facet_grid(regid ~ ., scales='free') +
     geom_line() + geom_hline(yintercept=0, colour='green') +
     scale_x_date(expand=c(0, 0)) + scale_linetype_discrete(name="", breaks=c(F, T), labels=c('Local parameters', 'Global parameters')) +
     theme_bw() + xlab(NULL) + ylab("Additional reported portion of total cases") + scale_y_continuous(labels=scales::percent)
+ggsave("tmp.pdf", gp, width=8, height=8)
 
 cities$Locality[cities$Country == 'Iceland'] <- "Reykjavík"
-cities$Locality[cities$Country == 'Brazil'] <- "Brasilia"
+cities$Locality[cities$Country == 'Brazil'] <- "Sao Paulo"
 
 ggplot(projdf.norm) +
     geom_hline(aes(yintercept=latitude), colour='black') +
@@ -168,7 +169,7 @@ for (ii in 1:nrow(cities)) {
     ticks <- rbind(ticks, data.frame(y=latitude + values, date, values, latitude))
 }
 
-ggplot(subset(projdf.norm, !global.params)) +
+gp <- ggplot(subset(projdf.norm, !global.params)) +
     geom_segment(data=verticals, aes(x=as.Date('2020-01-01'), xend=date, y=latitude, yend=latitude, colour=factor(latitude)), linetype='dashed') +
     geom_line(aes(date, latitude + 100 * dcc.norm, group=paste(regid, paramregid), colour=factor(latitude))) +
     geom_label(data=cities, aes(as.Date('2020-02-01'), y=latitude * ifelse(hemisphere == 'N', 1, -1), label=Locality)) +
@@ -181,7 +182,7 @@ ggplot(subset(projdf.norm, !global.params)) +
     theme_bw() + xlab(NULL) + ylab("Additional reported percent of total cases (relative to latitude)") +
     guides(colour=F) + coord_cartesian(xlim=c(as.Date("2020-01-01"), as.Date("2020-12-31")), clip="off") + theme(plot.margin=margin(5, 150, 5, 5, "pt"))
 
-ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314.pdf", width=9, height=6)
+ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314.pdf", gp, width=9, height=6)
 
 ## Do all regions
 

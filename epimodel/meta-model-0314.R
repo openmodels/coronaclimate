@@ -6,7 +6,7 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-resultdir <- "results-saved"
+resultdir <- "results"
 versions <- c('0314-full', '0314-noprior', '0314-noweather')
 suffix <- "-nodel"
 weights <- c('nobs', 'pop', 'region')
