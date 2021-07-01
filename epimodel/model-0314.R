@@ -1,4 +1,4 @@
-## setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
+## setwd("~/research/coronavirus/code/epimodel")
 
 source("../configs.R")
 
@@ -8,8 +8,8 @@ source(paste0("modellib-", version, ".R"))
 
 casespath <- "../../cases/panel_all.csv"
 weather <- c('t2m', 'tp', 'ssrd', 'utci')
-ols.priors.mu <- c(0.05075947952, 0.03104620013, -0.06615251605, -0.08119237222)
-ols.priors.se <- c(0.04050863843, 0.02348355048, 0.03277420295, 0.02246738476)
+ols.priors.mu <- c(0.02773106208, -0.03134987114, -0.01027632136, -0.02558036184) / 30
+ols.priors.se <- c(0.01222135339, 0.008463339282, 0.01140204532, 0.009860867169) / 30
 
 df <- read.csv(casespath)
 df$regid <- paste(df$Country, df$Region, df$Locality)
@@ -31,7 +31,7 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-stan.compiled <- list("full"=list("deaths"=stan_model(model_code=get.stan.model.deaths()),
+stan.compiled <- list("full2"=list("deaths"=stan_model(model_code=get.stan.model.deaths()),
                                   "nodice"=stan_model(model_code=get.stan.model.deaths())),
                       "noprior"=list("deaths"=stan_model(model_code=drop.stan.model.prior(get.stan.model.deaths())),
                                      "nodice"=stan_model(model_code=drop.stan.model.prior(get.stan.model.deaths()))),
@@ -45,8 +45,11 @@ cntyorder <- unique(df$regid[df$Region == '' & df$Locality == ''])
 finalorder <- c(cntyorder, randorder[!(randorder %in% cntyorder)])
 
 for (regid in finalorder) {
-    for (model in c('full', 'noprior', 'noweather')) {
+    for (model in c('full2', 'noprior', 'noweather')) {
         subdf <- df[df$regid == regid,]
+
+        if (regid == "Germany Berlin " && subdf$population[1] == 0)
+            subdf$population <- 3769495
 
         outpath <- paste0("../../results/epimodel-", version, "-", model, ".csv")
 

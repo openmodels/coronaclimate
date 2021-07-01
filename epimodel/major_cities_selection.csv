@@ -1,6 +1,6 @@
 Country,Region,Locality,ALPHA-3,GEO_ID_REFERENCE,GEO_ID,latitude,hemisphere
 Iceland,,Reykjav’k,ISL,GADM36_0,ISL,64.13,N
-Germany,Berlin,Berlin,FRA,BKG_AGS,AGS11000,52.52437,N
+Germany,Berlin,Berlin,DEU,BKG_AGS,AGS11000,52.52437,N
 USA,NY,New York,USA,USA_FIPS,36061,40.71427,N
 Pakistan,,Islamabad,PAK,GADM36_0,PAK,33.72,N
 Mexico,Mexico,Mexico City,MEX,GADM36_1,MEX.15_1,19.43,N

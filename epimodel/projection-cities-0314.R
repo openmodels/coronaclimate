@@ -98,6 +98,8 @@ for (ii in 1:nrow(cities)) {
         data <- list(T=nrow(weather), N=subres$population[1], K=length(weathervars), weather=0 * weather, ii_init=0)
         baseline <- forward(data, params, withweather$extraeein)
 
+        print(c(ridinfo$regid, dynregid, paramregid))
+        
         subprojdf <- data.frame(regid=ridinfo$regid, dynregid, paramregid, global.params,
                                 cc0=cumsum(baseline$dcc), deaths0=cumsum(baseline$ddeaths),
                                 cc1=cumsum(withweather$dcc), deaths1=cumsum(withweather$ddeaths),
@@ -119,7 +121,7 @@ library(ggplot2)
 
 projdf$date <- as.Date("2020-01-01") + projdf$time - 1
 
-projdf.norm <- projdf %>% group_by(regid, paramregid) %>% summarize(global.params, date=date, latitude=latitude, dcc.norm=pmax(dcc / maxcases, -1)) #, cc0, cc1, na.rm=T))
+projdf.norm <- projdf %>% group_by(regid, paramregid) %>% summarize(global.params, date=date, latitude=latitude, dcc.norm=pmax(dcc / max(maxcases, cc0, cc1, na.rm=T), -1))
 
 gp <- ggplot(projdf.norm[projdf.norm$global.params == F,], aes(date, dcc.norm, linetype=paramregid == '  ')) +
     facet_grid(regid ~ ., scales='free') +
@@ -196,7 +198,7 @@ for (regid in unique(results$regid[results$lowest_level == 1 & results$group == 
 
     weather <- demeanlist(subdf[, weathervars], list(factor(rep('all', nrow(subdf))))) / t(matrix(weatherscales, ncol=nrow(subdf), nrow=length(weathervars)))
 
-    dynamics <- read.csv(paste0("../../results-saved/epimodel-", version, "-dynamics.csv-", regid))
+    dynamics <- read.csv(paste0("../../results/epimodel-", version, "-dynamics.csv-", regid))
 
     params <- list(doweffect6=c(dynamics$doweffect[6:7], dynamics$doweffect[1:4]),
                    dowomegaeffect6=c(dynamics$dowomegaeffect[7:8], dynamics$dowomegaeffect[2:5]),
@@ -211,7 +213,13 @@ for (regid in unique(results$regid[results$lowest_level == 1 & results$group == 
 
     data <- list(T=nrow(weather), N=subres$population[1], K=length(weathervars), weather=weather, ii_init=0)
 
-    withweather <- forward.adaptive(data, params, diff(subdf$Confirmed))
+    withweather <- tryCatch({
+        forward.adaptive(data, params, diff(subdf$Confirmed))
+    }, error=function(e) {
+        NULL
+    })
+    if (is.null(withweather))
+        next
     withweather$dobserved_true <- c(0, diff(subdf$Confirmed))
 
     rsqr <- 1 - sum((withweather$dobserved_true - withweather$dcc)^2, na.rm=T) / sum(withweather$dobserved_true^2, na.rm=T)
@@ -251,24 +259,31 @@ sumstats$ext.ddeaths.norm <- sumstats$max.ddeaths.norm
 sumstats$ext.ddeaths.norm[-sumstats$min.ddeaths.norm > sumstats$ext.ddeaths.norm] <- sumstats$min.ddeaths.norm[-sumstats$min.ddeaths.norm > sumstats$ext.ddeaths.norm]
 
 sumstats$bin <- round(2 * sumstats$ext.dcc.norm, 1) / 2
-sumstats.ext.dcc <- sumstats %>% group_by(bin) %>% dplyr::summarize(stat='Extreme Cases', dpop=sum(population))
+sumstats.ext.dcc <- sumstats %>% group_by(bin) %>% dplyr::summarize(stat='Peak Cases', dpop=sum(population))
 sumstats$bin <- round(2 * sumstats$end.dcc.norm, 1) / 2
-sumstats.end.dcc <- sumstats %>% group_by(bin) %>% summarize(stat='Year-end Cases', dpop=sum(population))
+sumstats.end.dcc <- sumstats %>% group_by(bin) %>% dplyr::summarize(stat='Year-end Cases', dpop=sum(population))
 sumstats$bin <- round(2 * sumstats$ext.ddeaths.norm, 1) / 2
-sumstats.ext.ddeaths <- sumstats %>% group_by(bin) %>% summarize(stat='Extreme Deaths', dpop=sum(population))
+sumstats.ext.ddeaths <- sumstats %>% group_by(bin) %>% dplyr::summarize(stat='Peak Deaths', dpop=sum(population))
 sumstats$bin <- round(2 * sumstats$end.ddeaths.norm, 1) / 2
-sumstats.end.ddeaths <- sumstats %>% group_by(bin) %>% summarize(stat='Year-end Deaths', dpop=sum(population))
+sumstats.end.ddeaths <- sumstats %>% group_by(bin) %>% dplyr::summarize(stat='Year-end Deaths', dpop=sum(population))
 
 sumstats.agg <- rbind(sumstats.ext.dcc, sumstats.end.dcc, sumstats.ext.ddeaths, sumstats.end.ddeaths)
 
-ggplot(sumstats.agg) +
+gp <- ggplot(sumstats.agg) +
     facet_wrap(~ stat, ncol=2, nrow=2, scales="free_y") +
     geom_col(aes(-bin, dpop)) + # flip sign, so it's cc0 - cc1, consistent with normalization
     scale_x_continuous(expand=c(0, 0), labels=scales::percent) + scale_y_continuous(expand=expansion(mult=c(0, .05))) +
     theme_bw() + xlab("Change in the absence of weather variation") +
     ylab("Populations of regions affected")
+ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314-hists.pdf", gp, width=9, height=6)
 
-ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314-hists.pdf", width=9, height=6)
+gp <- ggplot(subset(sumstats.agg, stat %in% c('Peak Cases', 'Peak Deaths'))) +
+    facet_wrap(~ stat, ncol=2, scales="free_y") +
+    geom_col(aes(-bin, dpop)) + # flip sign, so it's cc0 - cc1, consistent with normalization
+    scale_x_continuous(expand=c(0, 0), labels=scales::percent) + scale_y_continuous(expand=expansion(mult=c(0, .05))) +
+    theme_bw() + xlab("Change in the absence of weather variation") +
+    ylab("Populations of regions affected")
+ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314-peakhists.pdf", gp, width=9, height=3)
 
 sumstats$bin <- round(4 * sumstats$max.dcc.norm, 1) / 4
 sumstats.max.dcc <- sumstats %>% group_by(bin) %>% dplyr::summarize(stat='Maximum Cases Change', dpop=sum(population))
@@ -277,13 +292,13 @@ sumstats.max.ddeaths <- sumstats %>% group_by(bin) %>% dplyr::summarize(stat='Ma
 
 sumstats.agg <- rbind(sumstats.max.dcc, sumstats.max.ddeaths)
 
-ggplot(sumstats.agg) +
+gp <- ggplot(sumstats.agg) +
     facet_wrap(~ stat, nrow=1, scales="free_y") +
     geom_col(aes(bin, dpop)) +
     scale_x_continuous(expand=c(0, 0), labels=scales::percent) + scale_y_continuous(expand=expansion(mult=c(0, .05))) +
     theme_bw() + xlab("Change relative to constant weather") +
     ylab("Populations of regions affected")
 
-ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314-maxhists.pdf", width=9, height=3)
+ggsave("~/Dropbox/Coronavirus and Climate/figures/forward-cities-0314-maxhists.pdf", gp, width=9, height=3)
 
 sum(sumstats$population[sumstats$max.dcc.norm > .21]) / sum(sumstats$population)

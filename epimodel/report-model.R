@@ -3,8 +3,10 @@ setwd("~/research/coronavirus/code/epimodel")
 mainmodel <- '0314'
 
 weather <- c('t2m', 'tp', 'ssrd', 'utci')
-e.ols.mu <- c(0.05075947952, 0.03104620013, -0.06615251605, -0.08119237222)
-e.ols.se <- c(0.04050863843, 0.02348355048, 0.03277420295, 0.02246738476)
+##e.ols.mu <- c(0.05075947952, 0.03104620013, -0.06615251605, -0.08119237222)
+##e.ols.se <- c(0.04050863843, 0.02348355048, 0.03277420295, 0.02246738476)
+e.ols.mu <- c(.026, -.03, -.008, -.025)
+e.ols.se <- c(.011, .007, .01, .01)
 
 library(xtable)
 
@@ -25,7 +27,8 @@ format.regtbl <- function(mu, se) {
 alltbls <- list()
 allgdfs <- list()
 
-for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-", c('full', "noprior"), "-all-nobs-nodel.csv")) {
+for (subgrp in c('all', 'mobile')) {
+for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-", c('full', "noprior"), "-", subgrp, "-nobs-nodel.csv")) {
     df <- read.csv(filepath)
     subdf <- subset(df, Country == "" & Region == "")
 
@@ -70,37 +73,73 @@ for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-", c('full'
 
     alltbls[[filepath]] <- tbl
 }
+}
 
 ## Produce table
 tbl.row.names <- sapply(0:(4*length(weather)-1), function(ii) ifelse(ii < 2*length(weather), ifelse(ii %% 2 == 0, paste("Transmission", weather[1 + ii / 2]), ""), ifelse(ii %% 2 == 0, paste("Detection", weather[1 + (ii - 2*length(weather)) / 2]), "")))
 tbl <- cbind(tbl.row.names, alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-noprior-all-nobs-nodel.csv")]][, -2],
-             alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-full-all-nobs-nodel.csv")]][, -1:-2])
+             alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-full-mobile-nobs-nodel.csv")]][, -1:-2])
 names(tbl) <- c("", "OLS", "Bayes (Country)", "Bayes (Hyper)", "Bayes (Country)", "Bayes (Hyper)")
 
 print(xtable(tbl), include.rownames=F)
 
 ## Produce bars
 
-gdf <- rbind(data.frame(weather=rep(weather, 2), mu=c(NA * e.ols.mu, e.ols.mu), sd=c(NA * e.ols.se, e.ols.se), channel="OLS", panel=rep(c("No Prior", "OLS Prior"), each=length(weather))),
-             cbind(panel="No Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-all-nobs-nodel.csv')]]),
-             cbind(panel="OLS Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-full-all-nobs-nodel.csv')]]))
+## gdf <- rbind(data.frame(weather=rep(weather, 2), mu=c(NA * e.ols.mu, e.ols.mu), sd=c(NA * e.ols.se, e.ols.se), channel="OLS", panel=rep(c("No Prior", "OLS Prior"), each=length(weather))),
+##              cbind(panel="No Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-all-nobs-nodel.csv')]]),
+##              cbind(panel="OLS Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-full-all-nobs-nodel.csv')]]))
+
+gdf <- rbind(data.frame(weather=rep(weather, 2), mu=c(e.ols.mu, e.ols.mu), sd=c(e.ols.se, e.ols.se), channel="OLS", panel=rep(c("All Regions", "Mobile-only"), each=length(weather))),
+             cbind(panel="All Regions", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-all-nobs-nodel.csv')]]),
+             cbind(panel="Mobile-only", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-mobile-nobs-nodel.csv')]]))
 
 library(ggplot2)
 
-gdf$panel <- factor(gdf$panel, levels=c('No Prior', 'OLS Prior'))
+## gdf$panel <- factor(gdf$panel, levels=c('No Prior', 'OLS Prior'))
+gdf$panel <- factor(gdf$panel, levels=c('All Regions', 'Mobile-only'))
 gdf$channel <- factor(gdf$channel, levels=c('OLS', 'Detection', 'Transmission'))
 gdf$weather <- factor(gdf$weather, levels=c('t2m', 'utci', 'ssrd', 'tp'))
 
-ggplot(subset(gdf, channel != 'OLS'), aes(weather, mu, fill=panel)) +
-    facet_grid(channel ~ ., scales="free_y") +
-    geom_bar(stat='identity', position='dodge') + geom_errorbar(aes(ymin=mu - 1.96*sd, ymax=mu + 1.96*sd), position=position_dodge(width=.875), width=.5) + theme_bw() + xlab("Weather variable") + ylab("Normalized weather response") +
-    scale_fill_discrete(name=NULL) + theme(legend.position="bottom")
-ggsave(paste0("~/Dropbox/Coronavirus and Climate/figures/ols-compare-", mainmodel, ".pdf"), width=3, height=4.5)
+## ggplot(subset(gdf, channel != 'OLS'), aes(weather, mu, fill=panel)) +
+##     facet_grid(channel ~ ., scales="free_y") +
+##     geom_bar(stat='identity', position='dodge') + geom_errorbar(aes(ymin=mu - 1.96*sd, ymax=mu + 1.96*sd), position=position_dodge(width=.875), width=.5) + theme_bw() + xlab("Weather variable") + ylab("Normalized weather response") +
+##     scale_fill_discrete(name=NULL) + theme(legend.position="bottom")
+## ggsave(paste0("~/Dropbox/Coronavirus and Climate/figures/ols-compare-", mainmodel, ".pdf"), width=3, height=4.5)
 
 ## Show with OLS
 
-ggplot(gdf, aes(weather, mu, fill=channel)) +
+gp <- ggplot(gdf, aes(weather, mu, colour=channel)) +
     facet_grid(panel ~ ., scales="free_y") +
-    geom_bar(stat='identity', position='dodge') + geom_errorbar(aes(ymin=mu - 1.96*sd, ymax=mu + 1.96*sd), position=position_dodge(width=.875), width=.5) + theme_bw() + xlab("Weather variable") + ylab("Normalized weather response") +
-    scale_fill_discrete(name=NULL) + theme(legend.position="bottom")
-ggsave(paste0("~/Dropbox/Coronavirus and Climate/figures/ols-compare-", mainmodel, ".pdf"), width=3, height=4.5)
+    geom_point(stat='identity', position=position_dodge(width=.5)) + geom_linerange(aes(ymin=mu - 1.96*sd, ymax=mu + 1.96*sd), position=position_dodge(width=.5)) + theme_bw() + xlab("Weather variable") + ylab("Normalized weather response") +
+    scale_colour_discrete(name=NULL) + theme(legend.position="bottom")
+ggsave(paste0("~/Dropbox/Coronavirus and Climate/figures/ols-compare-", mainmodel, ".pdf"), gp, width=3.2, height=4.5)
+
+## Get effect of 1 unit change
+
+setwd("~/research/coronavirus/code/epimodel")
+
+mainmodel <- '0314'
+weather <- c('t2m', 'tp', 'ssrd', 'utci')
+casespath <- "../../cases/panel_all.csv"
+
+df <- read.csv(casespath)
+
+weatherscales <- apply(df[, weather], 2, sd)
+
+results <- read.csv(paste0("../../results/epimodel-meta-", mainmodel, "-noprior-all-nobs-nodel.csv"))
+subres <- subset(results, Country == "" & Region == "")
+
+e.epi.mu <- sapply(weather, function(ww) subres$mu[subres$param == paste0('e.', ww)] / weatherscales[weather == ww])
+e.epi.sd <- sapply(weather, function(ww) subres$sd[subres$param == paste0('e.', ww)] / weatherscales[weather == ww])
+o.epi.mu <- sapply(weather, function(ww) subres$mu[subres$param == paste0('o.', ww)] / weatherscales[weather == ww])
+o.epi.sd <- sapply(weather, function(ww) subres$sd[subres$param == paste0('o.', ww)] / weatherscales[weather == ww])
+
+data.frame(weather=rep(weather, 2), mu=c(e.epi.mu, o.epi.mu), sd=c(e.epi.sd, o.epi.sd), percent=100 * c(e.epi.mu, o.epi.mu), pm=100 * 1.96 * c(e.epi.sd, o.epi.sd), channel=rep(c('Transmission', 'Detection'), each=length(weather)))
+
+subres3 <- subset(results, Country != "" & Region == "" & group == "Combined")
+
+e.epi.t2m.perc <- 100 * subres3$mu[subres3$param == "e.t2m"] / weatherscales[weather == 't2m']
+quantile(e.epi.t2m.perc)
+
+o.epi.t2m.perc <- 100 * subres3$mu[subres3$param == "o.t2m"] / weatherscales[weather == 't2m']
+quantile(o.epi.t2m.perc)
