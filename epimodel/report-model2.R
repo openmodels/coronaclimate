@@ -1,4 +1,4 @@
-setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
+setwd("~/research/coronavirus/code/epimodel")
 
 format.regtbl <- function(mu, se) {
     if (is.na(mu))
@@ -16,9 +16,9 @@ format.regtbl <- function(mu, se) {
     c(mustr, sestr)
 }
 
-weather <- c('absh', 'r', 't2m', 'tp')
-e.ols.mu <- c(0.005168, -0.004100, -0.010323, -0.000976)
-e.ols.se <- c(0.003857, 0.000994, 0.005625, 0.000454)
+weather <- c('t2m', 'tp', 'ssrd', 'utci')
+e.ols.mu <- c(0.02773106208, -0.03134987114, -0.01027632136, -0.02558036184)
+e.ols.se <- c(0.01222135339, 0.008463339282, 0.01140204532, 0.009860867169)
 
 tbl <- data.frame(OLS=c(format.regtbl(e.ols.mu[1], e.ols.se[1]),
                         format.regtbl(e.ols.mu[2], e.ols.se[2]),

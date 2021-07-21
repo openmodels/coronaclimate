@@ -52,7 +52,7 @@ ggplot(subset(df4, !is.na(relative) & variable == 'sd'), aes(label, relative, co
 
 ### Bootstrapping
 
-setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
+setwd("~/research/coronavirus/code/epimodel")
 
 df <- read.csv("../../results/pairwise-all.csv")
 
@@ -82,6 +82,7 @@ for (param in unique(df$param)) {
     results <- rbind(results, data.frame(param, mu.mean=mean(mu.draws), mu.cilo=mu.quant[1], mu.cihi=mu.quant[2],
                                          sd.mean=mean(sd.draws), sd.cilo=sd.quant[1], sd.cihi=sd.quant[2]))
 }
+## Note: fails when gets to e.
 
 source("plotlib.R")
 
@@ -89,19 +90,19 @@ results$label <- get.param.labels(results$param)
 
 library(ggplot2)
 
-ggplot(results, aes(label, mu.mean)) +
-    coord_flip() + theme_bw() +
-    geom_point() + geom_errorbar(aes(ymin=mu.cilo, ymax=mu.cihi)) +
-    geom_hline(yintercept=0) +
-    xlab(NULL) + ylab("Average, relative to estimate without weather")
-ggsave("../../figures/pairwise-0105-mu.pdf", width=6.5, height=2.7)
+## gp <- ggplot(results, aes(label, mu.mean)) +
+##     coord_flip() + theme_bw() +
+##     geom_point() + geom_errorbar(aes(ymin=mu.cilo, ymax=mu.cihi)) +
+##     geom_hline(yintercept=0) +
+##     xlab(NULL) + ylab("Average, relative to estimate without weather")
+## ggsave("../../figures/pairwise-0314-mu.pdf", gp, width=6.5, height=2.7)
 
-ggplot(results, aes(label, sd.mean)) +
-    coord_flip() + theme_bw() +
-    geom_point() + geom_errorbar(aes(ymin=sd.cilo, ymax=sd.cihi)) +
-    geom_hline(yintercept=1) +
-    xlab(NULL) + ylab("Uncertainty (std. dev.), relative to estimate without weather")
-ggsave("../../figures/pairwise-0105-sd.pdf", width=6.5, height=2.7)
+## gp <- ggplot(results, aes(label, sd.mean)) +
+##     coord_flip() + theme_bw() +
+##     geom_point() + geom_errorbar(aes(ymin=sd.cilo, ymax=sd.cihi)) +
+##     geom_hline(yintercept=1) +
+##     xlab(NULL) + ylab("Uncertainty (std. dev.), relative to estimate without weather")
+## ggsave("../../figures/pairwise-0314-sd.pdf", gp, width=6.5, height=2.7)
 
 mean(df$mu1[df$param == 'omega']) / mean(df$mu2[df$param == 'omega'])
 mean(df$mu1[df$param == 'logomega']) - mean(df$mu2[df$param == 'logomega'])
@@ -112,16 +113,16 @@ mean(df$mu2[df$param == 'invkappa'])
 mean(df$mu1[df$param == 'invkappa'] + df$mu1[df$param == 'invtheta'])
 mean(df$mu2[df$param == 'invkappa'] + df$mu2[df$param == 'invtheta'])
 
-
 combodf <- data.frame(label=rep(results$label, 2), mu=c(results$mu.mean, results$sd.mean),
                       cilo=c(results$mu.cilo, results$sd.cilo), cihi=c(results$mu.cihi, results$sd.cihi),
                       var=rep(c('Average', 'Uncertainty (std. dev.)'), each=nrow(results)))
-ggplot(combodf, aes(label, mu)) +
+
+gp <- ggplot(subset(combodf, label != 'Exposed Imports'), aes(label, mu)) +
     facet_wrap(~ var, scales='free_x') +
     coord_flip() + theme_bw() +
     geom_point() + geom_errorbar(aes(ymin=cilo, ymax=cihi)) +
     geom_hline(data=data.frame(var=c('Average', 'Uncertainty (std. dev.)'), base=c(0, 1)), aes(yintercept=base)) +
     xlab(NULL) + ylab("Relative to estimate without weather")
-ggsave("../../figures/pairwise-0105.pdf", width=8, height=2.7)
+ggsave("~/Dropbox/Coronavirus and Climate/figures/pairwise-0314.pdf", gp, width=8, height=2.7)
 
 

@@ -11,6 +11,7 @@ dplyr, rstan
 
 Figure generation:
 
+1. main 2b: report-model.R
 1. xval-compare-S.pdf: xval-compare.R
 2. ols-compare-S.pdf and table in SI: ols-compare.R
 3. raw-results-1217-compare.pdf: meta-display-compare.R

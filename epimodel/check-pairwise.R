@@ -1,6 +1,6 @@
 outdir <- "../../results"
-onebase <- "epimodel-0105noprior.csv"
-twobase <- "epimodel-0105now.csv"
+onebase <- "epimodel-0314-noprior.csv"
+twobase <- "epimodel-0314-noweather.csv"
 
 allparams1 <- c()
 allmus1 <- c()

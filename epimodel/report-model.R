@@ -3,8 +3,8 @@ setwd("~/research/coronavirus/code/epimodel")
 mainmodel <- '0314'
 
 weather <- c('t2m', 'tp', 'ssrd', 'utci')
-e.ols.mu <- c(0.02773106208, -0.03134987114, -0.01027632136, -0.02558036184) / 30
-e.ols.se <- c(0.01222135339, 0.008463339282, 0.01140204532, 0.009860867169) / 30
+e.ols.mu <- c(0.02773106208, -0.03134987114, -0.01027632136, -0.02558036184)
+e.ols.se <- c(0.01222135339, 0.008463339282, 0.01140204532, 0.009860867169)
 
 library(xtable)
 
@@ -25,8 +25,8 @@ format.regtbl <- function(mu, se) {
 alltbls <- list()
 allgdfs <- list()
 
-for (subgrp in c('all', 'mobile')) {
-for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-", c('full', "noprior"), "-", subgrp, "-nobs-nodel.csv")) {
+for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-", c('full3', "noprior"), "-all-nobs-nodel.csv")) {
+## for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-noprior-", c('all', "mobile"), "-nobs-nodel.csv")) {
     df <- read.csv(filepath)
     subdf <- subset(df, Country == "" & Region == "")
 
@@ -35,21 +35,22 @@ for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-", c('full'
     o.epi.mu <- sapply(weather, function(ww) subdf$mu[subdf$param == paste0('o.', ww)])
     o.epi.sd <- sapply(weather, function(ww) subdf$sd[subdf$param == paste0('o.', ww)])
 
-    allgdfs[[filepath]] <- data.frame(weather=rep(weather, 2), mu=c(e.epi.mu, o.epi.mu), sd=c(e.epi.sd, o.epi.sd), channel=rep(c('Transmission', 'Detection'), each=length(weather)))
+    allgdfs[[filepath]] <- data.frame(weather=rep(weather, 2), mu=c(e.epi.mu, o.epi.mu),
+                                      sd=c(e.epi.sd, o.epi.sd), channel=rep(c('Transmission', 'Detection'), each=length(weather)))
 
     subdf2 <- subset(df, Country != "" & Region == "" & group == "Raw")
 
-    e.epi.mu2 <- sapply(weather, function(ww) mean(subdf2$mu[subdf$param == paste0('e.', ww)], na.rm=T))
-    e.epi.sd2 <- sapply(weather, function(ww) mean(subdf2$sd[subdf$param == paste0('e.', ww)], na.rm=T))
-    o.epi.mu2 <- sapply(weather, function(ww) mean(subdf2$mu[subdf$param == paste0('o.', ww)], na.rm=T))
-    o.epi.sd2 <- sapply(weather, function(ww) mean(subdf2$sd[subdf$param == paste0('o.', ww)], na.rm=T))
+    e.epi.mu2 <- sapply(weather, function(ww) mean(subdf2$mu[subdf2$param == paste0('e.', ww)], na.rm=T))
+    e.epi.sd2 <- sapply(weather, function(ww) mean(subdf2$sd[subdf2$param == paste0('e.', ww)], na.rm=T))
+    o.epi.mu2 <- sapply(weather, function(ww) mean(subdf2$mu[subdf2$param == paste0('o.', ww)], na.rm=T))
+    o.epi.sd2 <- sapply(weather, function(ww) mean(subdf2$sd[subdf2$param == paste0('o.', ww)], na.rm=T))
 
     subdf3 <- subset(df, Country != "" & Region == "" & group == "Combined")
 
-    e.epi.mu3 <- sapply(weather, function(ww) mean(subdf3$mu[subdf$param == paste0('e.', ww)], na.rm=T))
-    e.epi.sd3 <- sapply(weather, function(ww) mean(subdf3$sd[subdf$param == paste0('e.', ww)], na.rm=T))
-    o.epi.mu3 <- sapply(weather, function(ww) mean(subdf3$mu[subdf$param == paste0('o.', ww)], na.rm=T))
-    o.epi.sd3 <- sapply(weather, function(ww) mean(subdf3$sd[subdf$param == paste0('o.', ww)], na.rm=T))
+    e.epi.mu3 <- sapply(weather, function(ww) mean(subdf3$mu[subdf3$param == paste0('e.', ww)], na.rm=T))
+    e.epi.sd3 <- sapply(weather, function(ww) mean(subdf3$sd[subdf3$param == paste0('e.', ww)], na.rm=T))
+    o.epi.mu3 <- sapply(weather, function(ww) mean(subdf3$mu[subdf3$param == paste0('o.', ww)], na.rm=T))
+    o.epi.sd3 <- sapply(weather, function(ww) mean(subdf3$sd[subdf3$param == paste0('o.', ww)], na.rm=T))
 
     tbl <- data.frame()
     for (kk in 1:length(weather))
@@ -71,30 +72,35 @@ for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-", c('full'
 
     alltbls[[filepath]] <- tbl
 }
-}
 
 ## Produce table
-tbl.row.names <- sapply(0:(4*length(weather)-1), function(ii) ifelse(ii < 2*length(weather), ifelse(ii %% 2 == 0, paste("Transmission", weather[1 + ii / 2]), ""), ifelse(ii %% 2 == 0, paste("Detection", weather[1 + (ii - 2*length(weather)) / 2]), "")))
+tbl.row.names <- sapply(0:(4*length(weather)-1), function(ii) {
+    ifelse(ii < 2*length(weather), ifelse(ii %% 2 == 0, paste("Transmission", weather[1 + ii / 2]), ""),
+    ifelse(ii %% 2 == 0, paste("Detection", weather[1 + (ii - 2*length(weather)) / 2]), ""))
+    })
 tbl <- cbind(tbl.row.names, alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-noprior-all-nobs-nodel.csv")]][, -2],
-             alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-full-mobile-nobs-nodel.csv")]][, -1:-2])
+             alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-full3-all-nobs-nodel.csv")]][, -1:-2])
+## tbl <- cbind(tbl.row.names, alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-noprior-all-nobs-nodel.csv")]][, -2],
+##              alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-noprior-mobile-nobs-nodel.csv")]][, -1:-2])
 names(tbl) <- c("", "OLS", "Bayes (Country)", "Bayes (Hyper)", "Bayes (Country)", "Bayes (Hyper)")
 
 print(xtable(tbl), include.rownames=F)
 
 ## Produce bars
 
-## gdf <- rbind(data.frame(weather=rep(weather, 2), mu=c(NA * e.ols.mu, e.ols.mu), sd=c(NA * e.ols.se, e.ols.se), channel="OLS", panel=rep(c("No Prior", "OLS Prior"), each=length(weather))),
-##              cbind(panel="No Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-all-nobs-nodel.csv')]]),
-##              cbind(panel="OLS Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-full-all-nobs-nodel.csv')]]))
+gdf <- rbind(data.frame(weather=rep(weather, 2), mu=c(e.ols.mu, e.ols.mu), sd=c(e.ols.se, e.ols.se), channel="OLS",
+                        panel=rep(c("No Prior", "OLS Prior"), each=length(weather))),
+             cbind(panel="No Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-all-nobs-nodel.csv')]]),
+             cbind(panel="OLS Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-full3-all-nobs-nodel.csv')]]))
 
-gdf <- rbind(data.frame(weather=rep(weather, 2), mu=c(e.ols.mu, e.ols.mu), sd=c(e.ols.se, e.ols.se), channel="OLS", panel=rep(c("All Regions", "Mobile-only"), each=length(weather))),
-             cbind(panel="All Regions", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-all-nobs-nodel.csv')]]),
-             cbind(panel="Mobile-only", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-mobile-nobs-nodel.csv')]]))
+## gdf <- rbind(data.frame(weather=rep(weather, 2), mu=c(e.ols.mu, e.ols.mu), sd=c(e.ols.se, e.ols.se), channel="OLS", panel=rep(c("All Regions", "Mobile-only"), each=length(weather))),
+##              cbind(panel="All Regions", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-all-nobs-nodel.csv')]]),
+##              cbind(panel="Mobile-only", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-mobile-nobs-nodel.csv')]]))
 
 library(ggplot2)
 
-## gdf$panel <- factor(gdf$panel, levels=c('No Prior', 'OLS Prior'))
-gdf$panel <- factor(gdf$panel, levels=c('All Regions', 'Mobile-only'))
+gdf$panel <- factor(gdf$panel, levels=c('No Prior', 'OLS Prior'))
+## gdf$panel <- factor(gdf$panel, levels=c('All Regions', 'Mobile-only'))
 gdf$channel <- factor(gdf$channel, levels=c('OLS', 'Detection', 'Transmission'))
 gdf$weather <- factor(gdf$weather, levels=c('t2m', 'utci', 'ssrd', 'tp'))
 
@@ -108,7 +114,9 @@ gdf$weather <- factor(gdf$weather, levels=c('t2m', 'utci', 'ssrd', 'tp'))
 
 gp <- ggplot(gdf, aes(weather, mu, colour=channel)) +
     facet_grid(panel ~ ., scales="free_y") +
-    geom_point(stat='identity', position=position_dodge(width=.5)) + geom_linerange(aes(ymin=mu - 1.96*sd, ymax=mu + 1.96*sd), position=position_dodge(width=.5)) + theme_bw() + xlab("Weather variable") + ylab("Normalized weather response") +
+    geom_point(stat='identity', position=position_dodge(width=.5)) +
+    geom_linerange(aes(ymin=mu - 1.96*sd, ymax=mu + 1.96*sd), position=position_dodge(width=.5)) +
+    theme_bw() + xlab("Weather variable") + ylab("Normalized weather response") +
     scale_colour_discrete(name=NULL) + theme(legend.position="bottom")
 ggsave(paste0("~/Dropbox/Coronavirus and Climate/figures/ols-compare-", mainmodel, ".pdf"), gp, width=3.2, height=4.5)
 
