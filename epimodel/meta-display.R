@@ -5,7 +5,7 @@ library(ggplot2)
 library(scales)
 library(PBSmapping)
 
-outfile <- "../../results/epimodel-meta-0314-full-all-nobs-nodel.csv"
+outfile <- "../../results/epimodel-meta-0314-noprior-all-nobs-nodel.csv"
 suffix <- "-0314-all"
 
 do.old.figures <- F
@@ -136,11 +136,24 @@ polydata <- attr(shp, 'PolyData')
 allrecorded3 <- allrecorded2 %>% left_join(polydata, by=c('ALPHA.3'='GID_0'))
 
 for (pp in unique(allrecorded$param)) {
-    shp2 <- shp %>% left_join(allrecorded3[allrecorded3$param == pp, c('PID', 'mu')])
+    if (all(sign(allrecorded3$ci2.5[allrecorded3$param == pp]) == sign(allrecorded3$ci97.5[allrecorded3$param == pp]))) {
+        shp2 <- shp %>% left_join(allrecorded3[allrecorded3$param == pp, c('PID', 'mu')])
 
-    gp <- ggplot(shp2, aes(X, Y, fill=mu, group=paste(PID, SID))) +
-        geom_polygon() + scale_y_continuous(name=NULL, limits=c(-60, 85), expand=c(0, 0)) +
-        scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() + scale_fill_continuous(name=pp)
+        gp <- ggplot(shp2, aes(X, Y, fill=mu, group=paste(PID, SID))) +
+            geom_polygon() +
+            scale_y_continuous(name=NULL, limits=c(-60, 85), expand=c(0, 0)) +
+            scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() +
+            scale_fill_gradient2(name=pp, low="#d7191c", high="#2c7bb6", mid="#ffffbf")
+    } else {
+        shp2 <- shp %>% left_join(allrecorded3[allrecorded3$param == pp, c('PID', 'mu', 'ci2.5', 'ci97.5')])
+
+        gp <- ggplot(shp2, aes(X, Y, fill=mu, group=paste(PID, SID))) +
+            geom_polygon(aes(alpha=ifelse(sign(ci2.5) == sign(ci97.5), T, F))) +
+            scale_y_continuous(name=NULL, limits=c(-60, 85), expand=c(0, 0)) +
+            scale_x_continuous(name=NULL, expand=c(0, 0)) + theme_bw() +
+            scale_fill_gradient2(name=pp, low="#d7191c", high="#2c7bb6", mid="#ffffbf") +
+            scale_alpha_manual(name="Significance", breaks=c(F, T), labels=c("p > .05", "p < .05"), values=c(.5, 1))
+    }
 
     ggsave(paste0("~/Dropbox/Coronavirus and Climate/figures/byparam", suffix, "/epimodel-param-map-", pp, ".png"), gp, width=8, height=3)
 }

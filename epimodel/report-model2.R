@@ -16,16 +16,14 @@ format.regtbl <- function(mu, se) {
     c(mustr, sestr)
 }
 
-weather <- c('t2m', 'tp', 'ssrd', 'utci')
-e.ols.mu <- c(0.02773106208, -0.03134987114, -0.01027632136, -0.02558036184)
-e.ols.se <- c(0.01222135339, 0.008463339282, 0.01140204532, 0.009860867169)
+source("../configs.R")
 
 tbl <- data.frame(OLS=c(format.regtbl(e.ols.mu[1], e.ols.se[1]),
                         format.regtbl(e.ols.mu[2], e.ols.se[2]),
                         format.regtbl(e.ols.mu[3], e.ols.se[3]),
                         format.regtbl(e.ols.mu[4], e.ols.se[4]), rep(NA, 8)))
 
-for (model in c('0817-run1', '0817', '0817-noprior', '0907', '0921-pop')) {
+for (model in c('0314-noprior', '0314-full3')) {
     df <- read.csv(paste0('../../results/epimodel-meta-', model, '.csv'))
     subdf <- subset(df, Country == "" & Region == "")
 
@@ -61,20 +59,20 @@ xtable(tbl)
 
 ### Report with different weighting
 
-tbl <- data.frame(OLS=c(format.regtbl(e.ols.mu[1], e.ols.se[1]),
-                        format.regtbl(e.ols.mu[2], e.ols.se[2]),
-                        format.regtbl(e.ols.mu[3], e.ols.se[3]),
-                        format.regtbl(e.ols.mu[4], e.ols.se[4]), rep(NA, 8)))
+tbl <- data.frame(OLS=c(format.regtbl(ols.priors.mu[1], ols.priors.se[1]),
+                        format.regtbl(ols.priors.mu[2], ols.priors.se[2]),
+                        format.regtbl(ols.priors.mu[3], ols.priors.se[3]),
+                        format.regtbl(ols.priors.mu[4], ols.priors.se[4]), rep(NA, 8)))
 
-for (model in c('0907', '0907-pop', '0907-nobs')) {
-    df <- read.csv(paste0('../../results/epimodel-meta-', model, '.csv'))
+for (model in c('0314-noprior-all-nobs', '0314-noprior-all-pop', '0314-noprior-all-region')) {
+    df <- read.csv(paste0('../../results/epimodel-meta-', model, '-nodel.csv'))
     subdf <- subset(df, Country == "" & Region == "")
 
-    e.epi.mu <- c(subdf$mu[subdf$param == 'e.absh'], subdf$mu[subdf$param == 'e.r'],  subdf$mu[subdf$param == 'e.t2m'], subdf$mu[subdf$param == 'e.tp'])
-    e.epi.sd <- c(subdf$sd[subdf$param == 'e.absh'], subdf$sd[subdf$param == 'e.r'], subdf$sd[subdf$param == 'e.t2m'], subdf$sd[subdf$param == 'e.tp'])
+    e.epi.mu <- c(subdf$mu[subdf$param == 'e.t2m'], subdf$mu[subdf$param == 'e.tp'],  subdf$mu[subdf$param == 'e.ssrd'], subdf$mu[subdf$param == 'e.utci'])
+    e.epi.sd <- c(subdf$sd[subdf$param == 'e.t2m'], subdf$sd[subdf$param == 'e.tp'], subdf$sd[subdf$param == 'e.ssrd'], subdf$sd[subdf$param == 'e.utci'])
 
-    o.epi.mu <- c(subdf$mu[subdf$param == 'o.absh'], subdf$mu[subdf$param == 'o.r'],  subdf$mu[subdf$param == 'o.t2m'], subdf$mu[subdf$param == 'o.tp'])
-    o.epi.sd <- c(subdf$sd[subdf$param == 'o.absh'], subdf$sd[subdf$param == 'o.r'], subdf$sd[subdf$param == 'o.t2m'], subdf$sd[subdf$param == 'o.tp'])
+    o.epi.mu <- c(subdf$mu[subdf$param == 'o.t2m'], subdf$mu[subdf$param == 'o.tp'],  subdf$mu[subdf$param == 'o.ssrd'], subdf$mu[subdf$param == 'o.utci'])
+    o.epi.sd <- c(subdf$sd[subdf$param == 'o.t2m'], subdf$sd[subdf$param == 'o.tp'], subdf$sd[subdf$param == 'o.ssrd'], subdf$sd[subdf$param == 'o.utci'])
 
     tbl[, model] <- c(format.regtbl(e.epi.mu[1], e.epi.sd[1]),
                       format.regtbl(e.epi.mu[2], e.epi.sd[2]),
@@ -88,7 +86,7 @@ for (model in c('0907', '0907-pop', '0907-nobs')) {
 
 library(xtable)
 
-names(tbl) <- c("OLS", "By Region", "By Population", "By Observations")
+names(tbl) <- c("OLS", "By Observations", "By Population", "By Region")
 row.names(tbl) <- c(paste0('e.', c(weather[1], " ", weather[2], "  ", weather[3], "   ", weather[4], "    ")),
                     paste0('o.', c(weather[1], " ", weather[2], "  ", weather[3], "   ", weather[4], "    ")))
 xtable(tbl)

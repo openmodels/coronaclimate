@@ -2,9 +2,9 @@ setwd("~/research/coronavirus/code/epimodel")
 
 mainmodel <- '0314'
 
-weather <- c('t2m', 'tp', 'ssrd', 'utci')
-e.ols.mu <- c(0.02773106208, -0.03134987114, -0.01027632136, -0.02558036184)
-e.ols.se <- c(0.01222135339, 0.008463339282, 0.01140204532, 0.009860867169)
+ols.prior.length <- 15
+
+source("../configs.R")
 
 library(xtable)
 
@@ -25,8 +25,8 @@ format.regtbl <- function(mu, se) {
 alltbls <- list()
 allgdfs <- list()
 
-for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-", c('full3', "noprior"), "-all-nobs-nodel.csv")) {
-## for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-noprior-", c('all', "mobile"), "-nobs-nodel.csv")) {
+## for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-", c('full', "noprior"), "-all-nobs-nodel.csv")) {
+for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-noprior-", c('all', "mobile"), "-nobs-nodel.csv")) {
     df <- read.csv(filepath)
     subdf <- subset(df, Country == "" & Region == "")
 
@@ -54,7 +54,7 @@ for (filepath in paste0("../../results/epimodel-meta-", mainmodel, "-", c('full3
 
     tbl <- data.frame()
     for (kk in 1:length(weather))
-        tbl <- rbind(tbl, data.frame(OLS=format.regtbl(e.ols.mu[kk], e.ols.se[kk]),
+        tbl <- rbind(tbl, data.frame(OLS=format.regtbl(ols.priors.mu[kk], ols.priors.se[kk]),
                                      EPI.raw=format.regtbl(e.epi.mu2[kk], e.epi.sd2[kk]),
                                      EPI.country=format.regtbl(e.epi.mu3[kk], e.epi.sd3[kk]),
                                      EPI.hyper=format.regtbl(e.epi.mu[kk], e.epi.sd[kk])))
@@ -78,29 +78,30 @@ tbl.row.names <- sapply(0:(4*length(weather)-1), function(ii) {
     ifelse(ii < 2*length(weather), ifelse(ii %% 2 == 0, paste("Transmission", weather[1 + ii / 2]), ""),
     ifelse(ii %% 2 == 0, paste("Detection", weather[1 + (ii - 2*length(weather)) / 2]), ""))
     })
-tbl <- cbind(tbl.row.names, alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-noprior-all-nobs-nodel.csv")]][, -2],
-             alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-full3-all-nobs-nodel.csv")]][, -1:-2])
 ## tbl <- cbind(tbl.row.names, alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-noprior-all-nobs-nodel.csv")]][, -2],
-##              alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-noprior-mobile-nobs-nodel.csv")]][, -1:-2])
+##              alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-full-all-nobs-nodel.csv")]][, -1:-2])
+tbl <- cbind(tbl.row.names, alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-noprior-all-nobs-nodel.csv")]][, -2],
+             alltbls[[paste0("../../results/epimodel-meta-", mainmodel, "-noprior-mobile-nobs-nodel.csv")]][, -1:-2])
 names(tbl) <- c("", "OLS", "Bayes (Country)", "Bayes (Hyper)", "Bayes (Country)", "Bayes (Hyper)")
 
 print(xtable(tbl), include.rownames=F)
 
 ## Produce bars
 
-gdf <- rbind(data.frame(weather=rep(weather, 2), mu=c(e.ols.mu, e.ols.mu), sd=c(e.ols.se, e.ols.se), channel="OLS",
-                        panel=rep(c("No Prior", "OLS Prior"), each=length(weather))),
-             cbind(panel="No Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-all-nobs-nodel.csv')]]),
-             cbind(panel="OLS Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-full3-all-nobs-nodel.csv')]]))
+## gdf <- rbind(data.frame(weather=rep(weather, 2), mu=c(ols.priors.mu, ols.priors.mu), sd=c(ols.priors.se, ols.priors.se), channel="OLS",
+##                         panel=rep(c("No Prior", "OLS Prior"), each=length(weather))),
+##              cbind(panel="No Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-all-nobs-nodel.csv')]]),
+##              cbind(panel="OLS Prior", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-full-all-nobs-nodel.csv')]]))
 
-## gdf <- rbind(data.frame(weather=rep(weather, 2), mu=c(e.ols.mu, e.ols.mu), sd=c(e.ols.se, e.ols.se), channel="OLS", panel=rep(c("All Regions", "Mobile-only"), each=length(weather))),
-##              cbind(panel="All Regions", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-all-nobs-nodel.csv')]]),
-##              cbind(panel="Mobile-only", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-mobile-nobs-nodel.csv')]]))
+gdf <- rbind(data.frame(weather=rep(weather, 2), mu=c(ols.priors.mu, ols.priors.mu), sd=c(ols.priors.se, ols.priors.se),
+                        channel="OLS", panel=rep(c("All Regions", "Mobile-only"), each=length(weather))),
+             cbind(panel="All Regions", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-all-nobs-nodel.csv')]]),
+             cbind(panel="Mobile-only", allgdfs[[paste0('../../results/epimodel-meta-', mainmodel, '-noprior-mobile-nobs-nodel.csv')]]))
 
 library(ggplot2)
 
-gdf$panel <- factor(gdf$panel, levels=c('No Prior', 'OLS Prior'))
-## gdf$panel <- factor(gdf$panel, levels=c('All Regions', 'Mobile-only'))
+## gdf$panel <- factor(gdf$panel, levels=c('No Prior', 'OLS Prior'))
+gdf$panel <- factor(gdf$panel, levels=c('All Regions', 'Mobile-only'))
 gdf$channel <- factor(gdf$channel, levels=c('OLS', 'Detection', 'Transmission'))
 gdf$weather <- factor(gdf$weather, levels=c('t2m', 'utci', 'ssrd', 'tp'))
 

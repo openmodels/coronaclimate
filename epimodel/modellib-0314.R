@@ -143,7 +143,7 @@ model {
 
 get.stan.model.deaths <- function() stan.model.master
 get.stan.model.nodice <- function() {
-    one <- str_replace(str_replace(str_replace(str_replace(stan.model.master, fixed("real ddeaths_true[T-1];"), ""),
+    one <- str_replace(str_replace(str_replace(str_replace(stan.model.master, fixed("vector[T-1] ddeaths_true;"), ""),
                                                fixed("real<lower=0, upper=.1> deathrate; // rate of death"), ""),
                                    fixed("real<lower=-.01, upper=0> deathlearning; // decreases deathrate"), ""),
                        fixed("real<lower=0, upper=1> deathomegaplus; // additional rate of reported deaths"), "")

@@ -7,11 +7,11 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
 resultdir <- "results"
-versions <- c('0314-full3', '0314-noprior', '0314-noweather')
+versions <- c('0314-noprior', '0314-noweather')
 suffix <- "-nodel"
 weights <- c('nobs', 'pop', 'region')
 mobileonlys <- c(F, T)
-code.version <- "1218"
+code.version <- "0314"
 
 df <- read.csv("../../cases/panel_all.csv")
 df$regid <- paste(df$Country, df$Region, df$Locality)

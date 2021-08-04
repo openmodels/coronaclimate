@@ -32,11 +32,11 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
 stan.compiled <- list("full3"=list("deaths"=stan_model(model_code=get.stan.model.deaths()),
-                                  "nodice"=stan_model(model_code=get.stan.model.deaths())),
+                                   "nodice"=stan_model(model_code=get.stan.model.nodice())),
                       "noprior"=list("deaths"=stan_model(model_code=drop.stan.model.prior(get.stan.model.deaths())),
-                                     "nodice"=stan_model(model_code=drop.stan.model.prior(get.stan.model.deaths()))),
+                                     "nodice"=stan_model(model_code=drop.stan.model.prior(get.stan.model.nodice()))),
                       "noweather"=list("deaths"=stan_model(model_code=drop.stan.model.weather(get.stan.model.deaths())),
-                                       "nodice"=stan_model(model_code=drop.stan.model.weather(get.stan.model.deaths()))))
+                                       "nodice"=stan_model(model_code=drop.stan.model.weather(get.stan.model.nodice()))))
 
 weatherscales <- apply(df[, weather], 2, sd)
 
@@ -45,7 +45,7 @@ cntyorder <- unique(df$regid[df$Region == '' & df$Locality == ''])
 finalorder <- c(cntyorder, randorder[!(randorder %in% cntyorder)])
 
 for (regid in finalorder) {
-    for (model in c('full3', 'noprior', 'noweather')) {
+    for (model in c('noprior', 'noweather')) {
         subdf <- df[df$regid == regid,]
 
         if (regid == "Germany Berlin " && subdf$population[1] == 0)
