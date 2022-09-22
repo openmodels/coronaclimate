@@ -3,7 +3,7 @@ setwd("~/research/coronavirus/code/epimodel")
 source("../configs.R")
 
 df <- read.csv("../../cases/panel_all.csv")
-results <- read.csv("../../results/epimodel-meta-0314-noprior-all-nobs-nodel-saved.csv") # XXX
+results <- read.csv("../../results/epimodel-meta-0314-noprior-all-nobs-nodel.csv")
 
 weatherscales <- apply(df[, weather], 2, sd)
 units <- c('K', 'mm day^{-1}', 'W m^{-2}', 'point')
@@ -52,3 +52,10 @@ for (ww in weather) {
         cat(paste0(str, "\n"))
     }
 }
+
+## Model 3 months at +1 C
+## FIRST: Construct global model
+
+source("forward-0314.R")
+
+rows <- subset(results, Country == "" & Region == "" & Locality == "" & group == "Combined")

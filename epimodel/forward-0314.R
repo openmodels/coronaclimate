@@ -1,4 +1,4 @@
-forward <- function(data, params, extraeein) {
+forward <- function(data, params, extraeein=rep(0, data$T), primed=NULL) {
 ### Data:
 
     ## int<lower=0> T; // time periods
@@ -50,11 +50,16 @@ forward <- function(data, params, extraeein) {
 
 ### Forward simulation
 
-    doweffect <- rep(0, 7)
-    dowomegaeffect <- rep(0, 7)
-    for (dd in 1:6) {
-        doweffect[dd] <- params$doweffect6[dd];
-        dowomegaeffect[dd] <- params$dowomegaeffect6[dd];
+    if (is.null(primed)) {
+        doweffect <- rep(0, 7)
+        dowomegaeffect <- rep(0, 7)
+        for (dd in 1:6) {
+            doweffect[dd] <- params$doweffect6[dd];
+            dowomegaeffect[dd] <- params$dowomegaeffect6[dd];
+        }
+    } else {
+        doweffect <- primed$doweffect
+        dowomegaeffect <- primed$dowomegaeffect
     }
 
     ss <- rep(NA, data$T)
@@ -70,13 +75,23 @@ forward <- function(data, params, extraeein) {
     dcc <- rep(NA, data$T - 1)
     ddeaths <- rep(NA, data$T - 1)
 
-    ss[1] <- data$N;
-    ee1[1] <- data$ii_init;
-    ee2[1] <- data$ii_init;
-    ii1[1] <- data$ii_init;
-    ii2[1] <- data$ii_init;
-    qq[1] <- data$ii_init;
-    rr[1] <- data$ii_init;
+    if (is.null(primed)) {
+        ss[1] <- data$N;
+        ee1[1] <- data$ii_init;
+        ee2[1] <- data$ii_init;
+        ii1[1] <- data$ii_init;
+        ii2[1] <- data$ii_init;
+        qq[1] <- data$ii_init;
+        rr[1] <- data$ii_init;
+    } else {
+        ss[1] <- primed$ss[1]
+        ee1[1] <- primed$ee1[1]
+        ee2[1] <- primed$ee2[1]
+        ii1[1] <- primed$ii1[1]
+        ii2[1] <- primed$ii2[1]
+        qq[1] <- primed$qq[1]
+        rr[1] <- primed$rr[1]
+    }
     for (tt in 2:data$T) {
         new_ee1[tt-1] <- exp(params$logbeta[tt-1] + doweffect[1 + (tt %% 7)] + sum(data$weather[tt-1,] * params$effect))*ss[tt-1]*(ii1[tt-1] + ii2[tt-1]) / data$N;
         ss[tt] <- ss[tt-1] - new_ee1[tt-1];

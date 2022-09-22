@@ -3,6 +3,7 @@
 source("../configs.R")
 
 version <- "0314"
+drop.omegaeffect <- T
 
 source(paste0("modellib-", version, ".R"))
 
@@ -31,12 +32,19 @@ library(rstan)
 options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
-stan.compiled <- list("full3"=list("deaths"=stan_model(model_code=get.stan.model.deaths()),
-                                   "nodice"=stan_model(model_code=get.stan.model.nodice())),
-                      "noprior"=list("deaths"=stan_model(model_code=drop.stan.model.prior(get.stan.model.deaths())),
-                                     "nodice"=stan_model(model_code=drop.stan.model.prior(get.stan.model.nodice()))),
-                      "noweather"=list("deaths"=stan_model(model_code=drop.stan.model.weather(get.stan.model.deaths())),
-                                       "nodice"=stan_model(model_code=drop.stan.model.weather(get.stan.model.nodice()))))
+proc.model <- function(model) {
+    if (drop.omegaeffect)
+        return(drop.stan.model.omega(model))
+    else
+        return(model)
+}
+
+stan.compiled <- list("full3"=list("deaths"=stan_model(model_code=proc.model(get.stan.model.deaths())),
+                                   "nodice"=stan_model(model_code=proc.model(get.stan.model.nodice()))),
+                      "noprior"=list("deaths"=stan_model(model_code=proc.model(drop.stan.model.prior(get.stan.model.deaths()))),
+                                     "nodice"=stan_model(model_code=proc.model(drop.stan.model.prior(get.stan.model.nodice())))),
+                      "noweather"=list("deaths"=stan_model(model_code=proc.model(drop.stan.model.weather(get.stan.model.deaths()))),
+                                       "nodice"=stan_model(model_code=proc.model(drop.stan.model.weather(get.stan.model.nodice())))))
 
 weatherscales <- apply(df[, weather], 2, sd)
 
@@ -51,7 +59,7 @@ for (regid in finalorder) {
         if (regid == "Germany Berlin " && subdf$population[1] == 0)
             subdf$population <- 3769495
 
-        outpath <- paste0("../../results/epimodel-", version, "-", model, ".csv")
+        outpath <- paste0("../../results/epimodel-", version, "-", model, ifelse(drop.omegaeffect, "-noomega", ""), ".csv")
 
         ## Check if region is claimed
         regfile <- paste0(outpath, "-", regid)

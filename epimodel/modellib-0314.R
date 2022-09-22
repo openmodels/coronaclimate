@@ -168,3 +168,10 @@ drop.stan.model.weather <- function(model) {
     str_replace(str_replace(one, fixed(" + dot_product(weather[tt-1], effect)"), ""),
                 fixed(" + dot_product(weather[tt-1], omegaeffect)"), "")
 }
+
+drop.stan.model.omega <- function(model) {
+    str_replace(str_replace(str_replace(model, fixed("vector<lower=-.1, upper=.1>[K] omegaeffect;"), ""),
+                            fixed(" + dot_product(weather[tt-1], omegaeffect)"), ""),
+                fixed(" + omegaeffect"), "")
+}
+                
