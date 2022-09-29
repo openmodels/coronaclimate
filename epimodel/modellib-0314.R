@@ -175,3 +175,8 @@ drop.stan.model.omega <- function(model) {
                 fixed(" + omegaeffect"), "")
 }
                 
+drop.stan.model.dlogomega <- function(model) {
+    str_replace(str_replace(str_replace(model, fixed("vector<lower=-.1, upper=.1>[T-2] dlogomega;"), ""),
+                            fixed("logomega[2:T-1] = log(omega0) + cumulative_sum(dlogomega);"), "for (tt in 2:T-1) logomega[tt] = log(omega0);"),
+                fixed("dlogomega ~ normal(0, alpha);"), "")
+}

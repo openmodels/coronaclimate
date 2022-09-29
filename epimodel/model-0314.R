@@ -4,6 +4,8 @@ source("../configs.R")
 
 version <- "0314"
 drop.omegaeffect <- T
+drop.variableomega <- T
+drop.death <- T
 
 source(paste0("modellib-", version, ".R"))
 
@@ -34,9 +36,11 @@ rstan_options(auto_write = TRUE)
 
 proc.model <- function(model) {
     if (drop.omegaeffect)
-        return(drop.stan.model.omega(model))
-    else
-        return(model)
+        model <- drop.stan.model.omega(model)
+    if (drop.variableomega)
+        model <- drop.stan.model.dlogomega(model)
+
+    return(model)
 }
 
 stan.compiled <- list("full3"=list("deaths"=stan_model(model_code=proc.model(get.stan.model.deaths())),
@@ -53,13 +57,13 @@ cntyorder <- unique(df$regid[df$Region == '' & df$Locality == ''])
 finalorder <- c(cntyorder, randorder[!(randorder %in% cntyorder)])
 
 for (regid in finalorder) {
-    for (model in c('noprior', 'noweather')) {
+    for (model in c('noweather')) { # 'full3', 'noprior', 
         subdf <- df[df$regid == regid,]
 
         if (regid == "Germany Berlin " && subdf$population[1] == 0)
             subdf$population <- 3769495
 
-        outpath <- paste0("../../results/epimodel-", version, "-", model, ifelse(drop.omegaeffect, "-noomega", ""), ".csv")
+        outpath <- paste0("../../results/epimodel-", version, "-", model, ifelse(drop.omegaeffect, "-noomega", ""), ifelse(drop.variableomega, "-nodlogomega", ""), ifelse(drop.death, "-nodeath", ""), ".csv")
 
         ## Check if region is claimed
         regfile <- paste0(outpath, "-", regid)
@@ -90,7 +94,7 @@ for (regid in finalorder) {
                           total_prior=ols.priors.mu, total_prior_sd=ols.priors.se,
                           ii_init=0, dobserved_true=diff(subdf$Confirmed) + 1)
 
-        if (sum(!is.na(subdf$Deaths) & !is.na(subdf$Confirmed)) > 10) {
+        if (sum(!is.na(subdf$Deaths) & !is.na(subdf$Confirmed)) > 10 && !drop.death) {
             subdf$Deaths[is.na(subdf$Deaths)] <- 0
             while (sum(subdf$Deaths[-1] < subdf$Deaths[-nrow(subdf)]) > 0) {
                 bads <- c(F, subdf$Deaths[-1] < subdf$Deaths[-nrow(subdf)])

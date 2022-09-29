@@ -21,5 +21,6 @@ for (filename in list.files(outdir)) {
 
 for (filebase in names(allrhats)) {
    print(filebase)
+   print(length(allrhats[[filebase]]))
    print(quantile(allrhats[[filebase]], c(.05, .25, .5, .75, .95), na.rm=T))
 }

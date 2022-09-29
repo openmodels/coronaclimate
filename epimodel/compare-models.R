@@ -2,16 +2,24 @@ setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
 
 library(lubridate)
 
-result.files <- c('epimodel-0604.csv', 'epimodel-0604-ww.csv', 'epimodel-0615.csv',
-                  'epimodel-meta-0616.csv', 'epimodel-0803.csv', 'epimodel-meta-0806-x5.csv',
-                  'epimodel-meta-0817.csv', 'epimodel-meta-0817-noprior.csv',
-                  'epimodel-meta-0907-nobs.csv', 'epimodel-meta-0907-pop.csv', 'epimodel-meta-0907-region.csv',
-                  'epimodel-meta-0921-pop.csv', 'epimodel-meta-1030-all-pop.csv', 'epimodel-meta-1111-mixed-all-pop.csv')
-result.names <- c('Kucharski et al.', 'Include Weather', 'Handle Deaths',
-                  'Death & Not', 'Early/Late & Mobility', 'Const. Omega & Priors',
-                  'New Weather', 'Drop Priors',
-                  'Omega Effect, by Pop.', 'Omega Effect, by Obs.', 'Omega Effect, by Reg.',
-                  'Smooth Omega', 'Estimated Testing', 'OLS Compare')
+## result.files <- c('epimodel-0604.csv', 'epimodel-0604-ww.csv', 'epimodel-0615.csv',
+##                   'epimodel-meta-0616.csv', 'epimodel-0803.csv', 'epimodel-meta-0806-x5.csv',
+##                   'epimodel-meta-0817.csv', 'epimodel-meta-0817-noprior.csv',
+##                   'epimodel-meta-0907-nobs.csv', 'epimodel-meta-0907-pop.csv', 'epimodel-meta-0907-region.csv',
+##                   'epimodel-meta-0921-pop.csv', 'epimodel-meta-1030-all-pop.csv', 'epimodel-meta-1111-mixed-all-pop.csv')
+## result.names <- c('Kucharski et al.', 'Include Weather', 'Handle Deaths',
+##                   'Death & Not', 'Early/Late & Mobility', 'Const. Omega & Priors',
+##                   'New Weather', 'Drop Priors',
+##                   'Omega Effect, by Pop.', 'Omega Effect, by Obs.', 'Omega Effect, by Reg.',
+##                   'Smooth Omega', 'Estimated Testing', 'OLS Compare')
+result.files <- c('epimodel-0314-noweather-noomega-nodlogomega-nodeath.csv',
+                  'epimodel-0314-noweather-noomega-nodeath.csv', 'epimodel-0314-noweather.csv',
+                  'epimodel-0314-noprior-noomega.csv', 
+                  'epimodel-0314-noprior.csv', 'epimodel-0314-full3.csv'),
+result.names <- c("Kucharski et al.", " + Variable reporting rate", " + Handle deaths",
+                  " + Weather effects on transmission", " + Weather effects on detection",
+                  " + OLS-based priors")
+                  
 
 coeff.names <- list('alpha'='Time Variance', 'invsigma'='Incubation Period', 'invgamma'='Infectious Period', 'omega'='Reporting Rate', 'error'='Model Error', 'e.absh'='Beta[Abs. Humid.]', 'e.r'='Beta[Rel. Humid.]', 'e.t2m'='Beta[Surface Temp.]', 'e.tp'='Beta[Total Prec.]', 'o.absh'='Zeta[Abs. Humid.]', 'o.r'='Zeta[Rel. Humid.]', 'o.t2m'='Zeta[Surface Temp.]', 'o.tp'='Zeta[Total Prec.]', 'deathrate'='Death Rate', 'deathomegaplus'='Death Reporting', 'portion_early'='Portion Early', 'mobility_slope'='Mobility Slope', 'logbeta'='Log Transmission', 'logomega'='Log Reporting', 'eein'='Infected Imports', 'omega0'='Initial Reporting', 'domega'='Reporting Slope', 'invkappa'='Testing Delay', 'invtheta'='Reporting Delay', 'e.ssrd', 'e.ssrd'='Beta[Solar Rad.]', 'e.utci'='Beta[Thermal Index]', 'o.ssrd'='Zeta[Solar Rad.]', 'o.utci'='Zeta[Thermal Index]')
 coeff.order <- c('Time Variance', 'Incubation Period', 'Infectious Period', 'Testing Delay', 'Reporting Delay', 'Reporting Rate', 'Initial Reporting', 'Reporting Slope', 'Model Error', 'Beta[Abs. Humid.]', 'Beta[Rel. Humid.]', 'Beta[Surface Temp.]', 'Beta[Total Prec.]', 'Beta[Solar Rad.]', 'Beta[Thermal Index]', 'Zeta[Abs. Humid.]', 'Zeta[Rel. Humid.]', 'Zeta[Surface Temp.]', 'Zeta[Total Prec.]', 'Zeta[Solar Rad.]', 'Zeta[Thermal Index]', 'Death Rate', 'Death Reporting', 'Portion Early', 'Mobility Slope', 'Log Transmission', 'Log Reporting', 'Infected Imports')
