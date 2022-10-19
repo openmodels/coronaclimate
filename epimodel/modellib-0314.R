@@ -21,8 +21,8 @@ data {
   vector[T-1] dmobility_proxy;
 
   real ii_init; // usually 0, so provide as known
-  vector[T-1] dobserved_true;
-  vector[T-1] ddeaths_true;
+  vector[T-1] dobserved_true; # 1 more than diff(confirmed)
+  vector[T-1] ddeaths_true; # 1 more than diff(deaths)
 }
 transformed data {
   real observed_true = sum(dobserved_true - 1); // +1 when input

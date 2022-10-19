@@ -4,7 +4,7 @@ source("../configs.R")
 
 version <- "0314"
 drop.omegaeffect <- T
-drop.variableomega <- T
+drop.variableomega <- F
 drop.death <- T
 
 source(paste0("modellib-", version, ".R"))
