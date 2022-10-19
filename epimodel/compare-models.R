@@ -1,4 +1,4 @@
-setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
+setwd("~/research/coronavirus/code/epimodel")
 
 library(lubridate)
 
@@ -12,17 +12,17 @@ library(lubridate)
 ##                   'New Weather', 'Drop Priors',
 ##                   'Omega Effect, by Pop.', 'Omega Effect, by Obs.', 'Omega Effect, by Reg.',
 ##                   'Smooth Omega', 'Estimated Testing', 'OLS Compare')
-result.files <- c('epimodel-0314-noweather-noomega-nodlogomega-nodeath.csv',
-                  'epimodel-0314-noweather-noomega-nodeath.csv', 'epimodel-0314-noweather.csv',
-                  'epimodel-0314-noprior-noomega.csv', 
-                  'epimodel-0314-noprior.csv', 'epimodel-0314-full3.csv'),
+result.files <- c('epimodel-0314-noweather-noomega-nodlogomega-nodeath-nodel.csv',
+                  'epimodel-0314-noweather-noomega-nodeath-nodel.csv', 'epimodel-0314-noweather-nodel.csv',
+                  'epimodel-0314-noprior-noomega-nodel.csv', 
+                  'epimodel-0314-noprior-nodel.csv', 'epimodel-0314-full3-nodel.csv')
 result.names <- c("Kucharski et al.", " + Variable reporting rate", " + Handle deaths",
                   " + Weather effects on transmission", " + Weather effects on detection",
                   " + OLS-based priors")
                   
 
-coeff.names <- list('alpha'='Time Variance', 'invsigma'='Incubation Period', 'invgamma'='Infectious Period', 'omega'='Reporting Rate', 'error'='Model Error', 'e.absh'='Beta[Abs. Humid.]', 'e.r'='Beta[Rel. Humid.]', 'e.t2m'='Beta[Surface Temp.]', 'e.tp'='Beta[Total Prec.]', 'o.absh'='Zeta[Abs. Humid.]', 'o.r'='Zeta[Rel. Humid.]', 'o.t2m'='Zeta[Surface Temp.]', 'o.tp'='Zeta[Total Prec.]', 'deathrate'='Death Rate', 'deathomegaplus'='Death Reporting', 'portion_early'='Portion Early', 'mobility_slope'='Mobility Slope', 'logbeta'='Log Transmission', 'logomega'='Log Reporting', 'eein'='Infected Imports', 'omega0'='Initial Reporting', 'domega'='Reporting Slope', 'invkappa'='Testing Delay', 'invtheta'='Reporting Delay', 'e.ssrd', 'e.ssrd'='Beta[Solar Rad.]', 'e.utci'='Beta[Thermal Index]', 'o.ssrd'='Zeta[Solar Rad.]', 'o.utci'='Zeta[Thermal Index]')
-coeff.order <- c('Time Variance', 'Incubation Period', 'Infectious Period', 'Testing Delay', 'Reporting Delay', 'Reporting Rate', 'Initial Reporting', 'Reporting Slope', 'Model Error', 'Beta[Abs. Humid.]', 'Beta[Rel. Humid.]', 'Beta[Surface Temp.]', 'Beta[Total Prec.]', 'Beta[Solar Rad.]', 'Beta[Thermal Index]', 'Zeta[Abs. Humid.]', 'Zeta[Rel. Humid.]', 'Zeta[Surface Temp.]', 'Zeta[Total Prec.]', 'Zeta[Solar Rad.]', 'Zeta[Thermal Index]', 'Death Rate', 'Death Reporting', 'Portion Early', 'Mobility Slope', 'Log Transmission', 'Log Reporting', 'Infected Imports')
+coeff.names <- list('alpha'='Time Variance', 'invsigma'='Incubation Period', 'invgamma'='Infectious Period', 'omega'='Reporting Rate', 'error'='Model Error', 'e.absh'='Beta[Abs. Humid.]', 'e.r'='Beta[Rel. Humid.]', 'e.t2m'='Beta[Surface Temp.]', 'e.tp'='Beta[Total Prec.]', 'o.absh'='Zeta[Abs. Humid.]', 'o.r'='Zeta[Rel. Humid.]', 'o.t2m'='Zeta[Surface Temp.]', 'o.tp'='Zeta[Total Prec.]', 'deathrate'='Death Rate', 'deathomegaplus'='Death Reporting', 'deathlearning'='Death rate learning', 'portion_early'='Portion Early', 'mobility_slope'='Mobility Slope', 'logbeta'='Log Transmission', 'logomega'='Log Reporting', 'eein'='Infected Imports', 'omega0'='Initial Reporting', 'domega'='Reporting Slope', 'invkappa'='Testing Delay', 'invtheta'='Reporting Delay', 'e.ssrd', 'e.ssrd'='Beta[Solar Rad.]', 'e.utci'='Beta[Thermal Index]', 'o.ssrd'='Zeta[Solar Rad.]', 'o.utci'='Zeta[Thermal Index]')
+coeff.order <- c('Time Variance', 'Incubation Period', 'Infectious Period', 'Testing Delay', 'Reporting Delay', 'Reporting Rate', 'Initial Reporting', 'Reporting Slope', 'Death Rate', 'Death Reporting', 'Death rate learning', 'Beta[Abs. Humid.]', 'Beta[Rel. Humid.]', 'Beta[Surface Temp.]', 'Beta[Total Prec.]', 'Beta[Solar Rad.]', 'Beta[Thermal Index]', 'Zeta[Abs. Humid.]', 'Zeta[Rel. Humid.]', 'Zeta[Surface Temp.]', 'Zeta[Total Prec.]', 'Zeta[Solar Rad.]', 'Zeta[Thermal Index]', 'Portion Early', 'Log Transmission', 'Log Reporting', 'Model Error')
 
 fits <- data.frame()
 performs <- data.frame()
@@ -31,6 +31,9 @@ for (rr in 1:length(result.files)) {
     print(filepath)
     df <- read.csv(filepath)
     for (param in unique(df$param)) {
+        if (!(coeff.names[[param]] %in% coeff.order))
+            next
+        
         if ("  " %in% df$regid[df$param == param]) {
             meanmu <- df$mu[df$param == param & df$regid == "  "]
             mean25 <- df$ci25[df$param == param & df$regid == "  "]
@@ -47,11 +50,13 @@ for (rr in 1:length(result.files)) {
         else
             rhat <- NA
 
-        if (rr >= which(result.files == 'epimodel-0803.csv') & rr <= which(result.files == 'epimodel-meta-0806-x5.csv')) {
-            if (param == 'e.absh')
-                param <- 'e.r'
-            else if (param == 'e.r')
-                param <- 'e.t2m'
+        if (any(result.files == 'epimodel-0803.csv')) {
+            if (rr >= which(result.files == 'epimodel-0803.csv') & rr <= which(result.files == 'epimodel-meta-0806-x5.csv')) {
+                if (param == 'e.absh')
+                    param <- 'e.r'
+                else if (param == 'e.r')
+                    param <- 'e.t2m'
+            }
         }
 
         ymin <- NA
@@ -85,10 +90,10 @@ fits$model <- factor(fits$model, levels=rev(result.names))
 fits$param.name <- factor(fits$param.name, coeff.order)
 
 gp <- ggplot(fits[!(fits$param %in% c('logbeta', 'logomega')),], aes(model, meanmu)) +
-    facet_wrap(~ param.name, scales='free_x', ncol=8) +
+    facet_wrap(~ param.name, scales='free_x', ncol=6) +
     geom_errorbar(aes(ymin=mean25, ymax=mean75)) +
     geom_linerange(aes(ymin=mu25q, ymax=mu75q), col='red', linetype='dashed') +
-    geom_linerange(aes(ymin=ymin, ymax=ymax), col='blue') +
+    # geom_linerange(aes(ymin=ymin, ymax=ymax), col='blue') +
     coord_flip() + scale_y_continuous(expand=c(.01, .01)) + theme_bw() +
     xlab(NULL) + ylab("Parameter Estimate")
 ggsave("../../figures/compare-models.pdf", gp, width=10, height=8)

@@ -1,6 +1,3 @@
-library(stringr)
-
-stan.model.master <- "
 data {
   int<lower=0> T; // time periods
   int<lower=0> N; // population
@@ -21,11 +18,8 @@ data {
   vector[T-1] dmobility_proxy;
 
   real ii_init; // usually 0, so provide as known
-  vector[T-1] dobserved_true; # 1 more than diff(confirmed)
-  vector[T-1] ddeaths_true; # 1 more than diff(deaths)
-}
-transformed data {
-  real observed_true = sum(dobserved_true - 1); // +1 when input
+  real dobserved_true[T-1];
+  real ddeaths_true[T-1];
 }
 parameters {
   // parameters
@@ -44,8 +38,8 @@ parameters {
   // effect of weather
   vector<lower=-.1, upper=.1>[K] effect;
   vector<lower=-.1, upper=.1>[K] omegaeffect;
-  vector<lower=-.1, upper=.1>[6] doweffect6;
-  vector<lower=-.1, upper=.1>[6] dowomegaeffect6;
+  vector<lower=-.1, upper=.1>[7] doweffect;
+  vector<lower=-.1, upper=.1>[7] dowomegaeffect;
 
   // affine transform for mobility
   real<lower=0, upper=10> mobility_slope;
@@ -69,21 +63,10 @@ transformed parameters {
   vector<lower=0>[T] qq; // waiting to be tested
   vector<lower=0>[T] rr; // waiting to be reported
 
-  // transformed variables
-  vector[7] doweffect;
-  vector[7] dowomegaeffect;
-
   vector[T-1] logomega;
-  vector<upper=1>[T-1] omega;
+  vector[T-1] omega;
   vector<lower=0>[T-1] dcc; // confirmed cases
   vector<lower=0>[T-1] ddeaths; // deaths
-
-  doweffect[7] = 0;
-  dowomegaeffect[7] = 0;
-  for (dd in 1:6) {
-    doweffect[dd] = doweffect6[dd];
-    dowomegaeffect[dd] = dowomegaeffect6[dd];
-  }
 
   logbeta[1] = log(beta0);
   logbeta[2:T] = log(beta0) + cumulative_sum(dlogbeta);
@@ -106,12 +89,12 @@ transformed parameters {
     ii1[tt] = ii1[tt-1] + 2*ee2[tt-1]/invsigma - 2*ii1[tt-1]/invgamma;
     ii2[tt] = ii2[tt-1] + 2*ii1[tt-1]/invgamma - 2*ii2[tt-1]/invgamma;
 
-    qq[tt] = qq[tt-1] + 2*ee1[tt-1]/invsigma - qq[tt-1]/invkappa;
+    qq[tt] = qq[tt-1] + new_ee1[tt-1] - qq[tt-1]/invkappa;
 
-    omega[tt-1] = exp(logomega[tt-1] + dowomegaeffect[1 + (tt % 7)] + dot_product(weather[tt-1], omegaeffect));
+    omega[tt-1] = (exp(logomega[tt-1]) / (1 + exp(logomega[tt-1]))) * exp(doweffect[1 + (tt % 7)] + dot_product(weather[tt-1], omegaeffect));
     rr[tt] = rr[tt-1] + omega[tt-1] * qq[tt-1]/invkappa - rr[tt-1]/invtheta;
 
-    dcc[tt-1] = rr[tt-1]/invtheta;
+    dcc[tt-1] = omega[tt-1] * rr[tt-1]/invtheta;
     ddeaths[tt-1] = (2*ii2[tt-1]/invgamma) * deathrate * exp(tt * deathlearning) * (omega[tt-1] + (1 - omega[tt-1]) * deathomegaplus);
   }
 }
@@ -126,9 +109,6 @@ model {
 
   total_prior ~ normal(effect + omegaeffect, total_prior_sd);
 
-  // facts of the data
-  target += uniform_lpdf(sum(omega .* (dobserved_true - 1) / observed_true) | observed_true / N, 1);
-
   // hyperparameters
   eein ~ exponential(1 / eein_prior);
   dlogomega ~ normal(0, alpha);
@@ -139,44 +119,4 @@ model {
   // model fit; add 1 to match data
   dobserved_true ~ lognormal(log(dcc + 1), error);
   ddeaths_true ~ lognormal(log(ddeaths + 1), error);
-}"
-
-get.stan.model.deaths <- function() stan.model.master
-get.stan.model.nodice <- function() {
-    one <- str_replace(str_replace(str_replace(str_replace(stan.model.master, fixed("vector[T-1] ddeaths_true;"), ""),
-                                               fixed("real<lower=0, upper=.1> deathrate; // rate of death"), ""),
-                                   fixed("real<lower=-.01, upper=0> deathlearning; // decreases deathrate"), ""),
-                       fixed("real<lower=0, upper=1> deathomegaplus; // additional rate of reported deaths"), "")
-    str_replace(str_replace(str_replace(one, fixed("vector<lower=0>[T-1] ddeaths; // deaths"), ""),
-                            fixed("ddeaths[tt-1] = (2*ii2[tt-1]/invgamma) * deathrate * exp(tt * deathlearning) * (omega[tt-1] + (1 - omega[tt-1]) * deathomegaplus);"), ""),
-                fixed("ddeaths_true ~ lognormal(log(ddeaths + 1), error);"), "")
-}
-
-drop.stan.model.prior <- function(model) {
-    str_replace(str_replace(str_replace(model, fixed("vector[K] total_prior;"), ""),
-                            fixed("vector<lower=0>[K] total_prior_sd;"), ""),
-                fixed("total_prior ~ normal(effect + omegaeffect, total_prior_sd);"), "")
-}
-
-drop.stan.model.weather <- function(model) {
-    model2 <- drop.stan.model.prior(model)
-    one <- str_replace(str_replace(str_replace(str_replace(str_replace(model2, fixed("int<lower=0> K; // # weather preds"), ""),
-                                                           fixed("matrix[T, K] weather;"), ""),
-                                               fixed("// effect of weather"), ""),
-                                   fixed("vector<lower=-.1, upper=.1>[K] effect;"), ""),
-                       fixed("vector<lower=-.1, upper=.1>[K] omegaeffect;"), "")
-    str_replace(str_replace(one, fixed(" + dot_product(weather[tt-1], effect)"), ""),
-                fixed(" + dot_product(weather[tt-1], omegaeffect)"), "")
-}
-
-drop.stan.model.omega <- function(model) {
-    str_replace(str_replace(str_replace(model, fixed("vector<lower=-.1, upper=.1>[K] omegaeffect;"), ""),
-                            fixed(" + dot_product(weather[tt-1], omegaeffect)"), ""),
-                fixed(" + omegaeffect"), "")
-}
-                
-drop.stan.model.dlogomega <- function(model) {
-    str_replace(str_replace(str_replace(model, fixed("vector<lower=-.1, upper=.1>[T-2] dlogomega;"), ""),
-                            fixed("logomega[2:T-1] = log(omega0) + cumulative_sum(dlogomega);"), "for (tt in 2:T-1) logomega[tt] = log(omega0);"),
-                fixed("dlogomega ~ normal(0, alpha);"), "")
 }
