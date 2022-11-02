@@ -1,4 +1,4 @@
-## setwd("~/research/coronavirus/code/epimodel")
+## setwd("~/research/coronavirus/code/seir-model")
 
 source("../configs.R")
 
@@ -57,7 +57,7 @@ cntyorder <- unique(df$regid[df$Region == '' & df$Locality == ''])
 finalorder <- c(cntyorder, randorder[!(randorder %in% cntyorder)])
 
 for (regid in finalorder) {
-    for (model in c('noweather')) { # 'full3', 'noprior', 
+    for (model in c('noweather')) { # 'full3', 'noprior',
         subdf <- df[df$regid == regid,]
 
         if (regid == "Germany Berlin " && subdf$population[1] == 0)

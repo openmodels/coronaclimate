@@ -1,4 +1,4 @@
-setwd("~/research/coronavirus/code/epimodel")
+setwd("~/research/coronavirus/code/seir-model")
 
 library(dplyr)
 library(reshape2)

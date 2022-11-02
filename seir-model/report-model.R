@@ -1,4 +1,4 @@
-setwd("~/research/coronavirus/code/epimodel")
+setwd("~/research/coronavirus/code/seir-model")
 
 mainmodel <- '0314'
 
@@ -123,7 +123,7 @@ ggsave(paste0("~/Dropbox/Coronavirus and Climate/figures/ols-compare-", mainmode
 
 ## Get effect of 1 unit change
 
-setwd("~/research/coronavirus/code/epimodel")
+setwd("~/research/coronavirus/code/seir-model")
 
 mainmodel <- '0314'
 weather <- c('t2m', 'tp', 'ssrd', 'utci')

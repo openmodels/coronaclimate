@@ -1,4 +1,4 @@
-## setwd("~/research/coronavirus/code/epimodel")
+## setwd("~/research/coronavirus/code/seir-model")
 
 source("../configs.R")
 
@@ -49,7 +49,7 @@ if (!file.exists("global-0314.RData")) {
     get.paramdf <- function(param, lax, rhats, rhatparam=NULL) {
         if (is.null(lax) || length(lax) == 0)
             return(data.frame(param, mu=NA, sd=NA, ci2.5=NA, ci25=NA, ci50=NA, ci75=NA, ci97.5=NA, rhat=NA))
-        
+
         if (is.null(rhatparam))
             rhatparam <- param
         rhat <- mean(rhats[grep(rhatparam, rownames(rhats)), 1])
@@ -120,11 +120,11 @@ for (tt in 1:364) {
     params$logbeta <- params$logbeta[tt:length(params$logbeta)]
     params$logomega <- params$logomega[tt:length(params$logomega)]
     params$eein <- params$eein[tt:length(params$eein)]
-    
+
     projs0 <- forward(data, params, primed=primed)
 
     data$weather <- matrix(c(rep(1, 15), rep(0, nrow(subdf) - 15)) / weatherscales[weather == 't2m'], nrow(subdf), 1)
-    
+
     projs1 <- forward(data, params, primed=primed)
 
     allprojs <- rbind(allprojs, data.frame(Date=subdf$Date[tt:nrow(subdf)], diff=c(0, cumsum(projs1$dcc - projs0$dcc)),

@@ -1,4 +1,4 @@
-setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
+setwd("~/Dropbox/Coronavirus and Climate/code/seir-model")
 
 num1all <- 1457
 num2all <- 1811

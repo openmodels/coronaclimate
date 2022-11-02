@@ -1,4 +1,4 @@
-setwd("~/research/coronavirus/code/epimodel")
+setwd("~/research/coronavirus/code/seir-model")
 
 weathervars <- c('t2m', 'tp', 'ssrd', 'utci')
 version <- "0314-noprior"
@@ -99,7 +99,7 @@ for (ii in 1:nrow(cities)) {
         baseline <- forward(data, params, withweather$extraeein)
 
         print(c(ridinfo$regid, dynregid, paramregid))
-        
+
         subprojdf <- data.frame(regid=ridinfo$regid, dynregid, paramregid, global.params,
                                 cc0=cumsum(baseline$dcc), deaths0=cumsum(baseline$ddeaths),
                                 cc1=cumsum(withweather$dcc), deaths1=cumsum(withweather$ddeaths),

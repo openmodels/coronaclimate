@@ -1,4 +1,4 @@
-setwd("~/research/coronavirus/code/epimodel")
+setwd("~/research/coronavirus/code/seir-model")
 
 library(dplyr)
 library(ggplot2)
@@ -41,7 +41,7 @@ if (do.old.figures) {
     ## Scatter plot
     library(reshape2)
     results2 <- dcast(subset(results, param != 'error' & showit), regid ~ param, value.var='mu')
-    
+
     ## Correlation panel
     panel.cor <- function(x, y){
         usr <- par("usr"); on.exit(par(usr))
@@ -80,7 +80,7 @@ allrecorded$paramgroup <- "Drop"
 allrecorded$paramgroup[allrecorded$param %in% c('invsigma', 'invkappa', 'invgamma', 'invtheta')] <- "Period Lengths"
 allrecorded$paramgroup[allrecorded$param %in% c('e.t2m', 'e.tp', 'e.r', 'e.absh', 'e.ssrd', 'e.utci')] <- "Weather on Log Transmission"
 allrecorded$paramgroup[allrecorded$param %in% c('o.t2m', 'o.tp', 'o.r', 'o.absh', 'o.ssrd', 'o.utci')] <- "Weather on Log Detection"
-allrecorded$paramgroup[allrecorded$param %in% c('portion_early', 'deathrate', 'deathomegaplus')] <- "Proportional Response" # 'omega', 
+allrecorded$paramgroup[allrecorded$param %in% c('portion_early', 'deathrate', 'deathomegaplus')] <- "Proportional Response" # 'omega',
 allrecorded$paramgroup[allrecorded$param %in% c('mobility_slope', 'alpha')] <- "Behavioural Response"
 allrecorded$paramgroup[allrecorded$param %in% c('logbeta', 'logomega', 'deathlearning')] <- "Baseline Log Rates"
 

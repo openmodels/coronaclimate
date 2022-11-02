@@ -1,4 +1,4 @@
-setwd("~/research/coronavirus/code/epimodel")
+setwd("~/research/coronavirus/code/seir-model")
 
 format.regtbl <- function(mu, se) {
     if (is.na(mu))

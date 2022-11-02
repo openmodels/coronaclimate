@@ -1,4 +1,4 @@
-setwd("~/research/coronavirus/code/epimodel")
+setwd("~/research/coronavirus/code/seir-model")
 
 library(dplyr)
 library(scales)
@@ -13,7 +13,7 @@ for (country in unique(results$Country)) {
     subres <- subset(results, Country == country & Region == '' & Locality == '' & group == 'Combined')
     if (nrow(subres) < 15 || nrow(subres) > 24)
         next
-    
+
     print(country)
 
     weather <- matrix(0, 365, 1)
@@ -35,7 +35,7 @@ for (country in unique(results$Country)) {
 
     baseline[!is.finite(baseline)] <- NA
     maxgrowth <- which.max(baseline)
-    
+
     for (effect in c('Transmission', 'Detection')) {
         if (effect == 'Transmission') {
             params[['effect']] <- 1

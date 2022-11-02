@@ -1,4 +1,4 @@
-setwd("~/research/coronavirus/code/epimodel")
+setwd("~/research/coronavirus/code/seir-model")
 
 ols.prior.length <- 15 # for OLS compare
 
@@ -13,7 +13,7 @@ df <- read.csv(filepath)
 
 for (ww in weather) {
     row.e <- subset(df, Country == "" & Region == "" & param == paste0('e.', ww))
-    
+
     pdf <- rbind(pdf, data.frame(channel='Transmission', weather=ww, level='Global',
                                  mu=row.e$mu, ylo=row.e$ci2.5, yhi=row.e$ci97.5,
                                  y25=row.e$ci25, y75=row.e$ci75))
@@ -23,10 +23,10 @@ for (ww in weather) {
     pdf <- rbind(pdf, data.frame(channel='Detection', weather=ww, level='Global',
                                  mu=row.o$mu, ylo=row.o$ci2.5, yhi=row.o$ci97.5,
                                  y25=row.o$ci25, y75=row.o$ci75))
-    
+
     rows.e <- subset(df, Country != "" & Region == "" & group == "Combined" & param == paste0('e.', ww))
     rows.o <- subset(df, Country != "" & Region == "" & group == "Combined" & param == paste0('o.', ww))
-        
+
     allmu <- rbind(allmu, data.frame(channel='Transmission', weather=ww, level='Country', mu=rows.e$mu))
     allmu <- rbind(allmu, data.frame(channel='Detection', weather=ww, level='Country', mu=rows.o$mu))
 }
