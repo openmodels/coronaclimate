@@ -1,4 +1,4 @@
-## setwd("~/research/coronavirus/code/epimodel")
+## setwd("~/research/coronavirus/code/seir-model")
 
 library(dplyr)
 library(ggplot2)
@@ -7,10 +7,10 @@ options(mc.cores = parallel::detectCores())
 rstan_options(auto_write = TRUE)
 
 resultdir <- "results"
-versions <- c('0314-noprior', '0314-noweather')
-suffix <- "-nodel"
-weights <- c('nobs', 'pop', 'region')
-mobileonlys <- c(F, T)
+versions <- '0314-noprior-noomega' #c('0314-noweather-noomega-nodlogomega-nodeath', '0314-noweather-noomega-nodeath', '0314-noprior-noomega') #c('0314-noprior', '0314-noweather')
+suffix <- "-nodel-combo"
+weights <- c('nobs') #, 'pop', 'region')
+mobileonlys <- c(F) #, T)
 code.version <- "0314"
 
 df <- read.csv("../../cases/panel_all.csv")

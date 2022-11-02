@@ -1,6 +1,6 @@
-## setwd("~/Dropbox/Coronavirus and Climate/code/epimodel")
+## setwd("~/research/coronavirus/code/seir-model")
 
-filepath <- '../../results/epimodel-1201.csv'
+filepath <- '../../results/epimodel-0314-noprior-noomega-nodel.csv'
 df <- read.csv(filepath)
 
 combine <- function(subdf) {

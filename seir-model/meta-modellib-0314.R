@@ -117,9 +117,15 @@ estimate.region <- function(subdfx, param, country, region) {
     recorded
 }
 
-## allrecorded <- read.csv(outfile)
-allrecorded <- data.frame()
-for (param in unique(results$param[!is.na(results$mu)])) {
+do.params <- unique(results$param[!is.na(results$mu)])
+if (file.exists(outfile)) {
+    allrecorded <- read.csv(outfile)
+    allrecorded <- subset(allrecorded, param %in% rev(unique(allrecorded$param))[-1])
+    do.params <- do.params[!(do.params %in% unique(allrecorded$param))]
+} else {
+    allrecorded <- data.frame()
+}
+for (param in do.params) {
     if (!(param %in% names(bounds)))
         next
 

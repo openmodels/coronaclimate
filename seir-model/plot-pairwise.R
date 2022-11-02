@@ -52,7 +52,7 @@ ggplot(subset(df4, !is.na(relative) & variable == 'sd'), aes(label, relative, co
 
 ### Bootstrapping
 
-setwd("~/research/coronavirus/code/epimodel")
+setwd("~/research/coronavirus/code/seir-model")
 
 df <- read.csv("../../results/pairwise-all.csv")
 
@@ -112,6 +112,9 @@ mean(df$mu2[df$param == 'invkappa'])
 
 mean(df$mu1[df$param == 'invkappa'] + df$mu1[df$param == 'invtheta'])
 mean(df$mu2[df$param == 'invkappa'] + df$mu2[df$param == 'invtheta'])
+
+mean(subset(df, param == "error")$mu1) # full3
+mean(subset(df, param == "error")$mu2) # noweather
 
 combodf <- data.frame(label=rep(results$label, 2), mu=c(results$mu.mean, results$sd.mean),
                       cilo=c(results$mu.cilo, results$sd.cilo), cihi=c(results$mu.cihi, results$sd.cihi),
