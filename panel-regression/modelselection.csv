@@ -1,0 +1,13 @@
+n,variables
+1,tp
+2,ssrd
+3,utci
+4,t2m
+5,r
+6,absh
+7,"tp,t2m"
+8,"t2m,absh"
+9,"tp,t2m,utci"
+10,"tp,t2m,utci,ssrd"
+11,"tp,absh,utci,ssrd"
+12,"tp,t2m,absh,utci,ssrd"

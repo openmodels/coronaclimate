@@ -1,0 +1,16 @@
+variables,n
+tp,0
+ssrd,1
+utci,2
+t2m,3
+"tp,ssrd",4
+"tp,utci",5
+"tp,t2m",6
+"ssrd,utci",7
+"ssrd,t2m",8
+"utci,t2m",9
+"tp,ssrd,utci",10
+"tp,ssrd,t2m",11
+"tp,utci,t2m",12
+"ssrd,utci,t2m",13
+"tp,ssrd,utci,t2m",14
