@@ -6,7 +6,7 @@ version <- "0314"
 
 source(paste0("modellib-", version, ".R"))
 
-casespath <- "../../cases/panel_all_fixed.csv"
+casespath <- "../../cases/panel_all.csv"
 
 df <- read.csv(casespath)
 df$regid <- paste(df$Country, df$Region, df$Locality)
